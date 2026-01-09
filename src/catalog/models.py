@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator
+from django.core.exceptions import ValidationError
 
 class ArtistType(models.TextChoices):
     PERSON = "PERSON", "Person"
@@ -311,6 +312,14 @@ class BucketBinRange(models.Model):
 
     is_active = models.BooleanField(default=True)
 
+    def clean(self):
+        super().clean()
+        # Only BUCKETED zones are allowed to define bucket bin ranges.
+        if self.zone and getattr(self.zone, "sort_strategy", None) != StorageZone.SortStrategy.BUCKETED:
+            raise ValidationError(
+                {"zone": "Bucket bin ranges can only be defined for BUCKETED zones (e.g., Garage Main)."}
+            )
+        
     class Meta:
         constraints = [
             models.UniqueConstraint(
