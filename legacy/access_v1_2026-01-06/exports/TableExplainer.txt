@@ -1,0 +1,12 @@
+changelog.xls this table exists to capture changes which feeds the rebin task list after adding new vinyk
+tblArtistLocation is used for a query and a report to make a catalog page specific to Rare and Premium items.
+tblBinSnapshot i dont think this is used anymore but may be somewhere in the code as part of changelog functionality or reporting functionality for rebin tasks
+tblBulkUpload use for bulkupload of vinyl as a function not storage
+tblMediaType table that drove SortKey3's MediaType
+tblRebinBaseLine this was old and likely deprecated now
+tblSettings legacy attempt to make bin size global
+tblShelfBin old bin mapping
+tblSortBuckets table that drove SortKey2's sort buckets
+tblTagging list of tags including bin and SortOrder
+tblVinylTag stores vinyl that were tagged driven by MasterKey
+Vinyl where all data resides both SortKey codes, MasterKey, and all important MediaItem information 

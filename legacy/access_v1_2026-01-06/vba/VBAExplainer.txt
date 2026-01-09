@@ -1,0 +1,6 @@
+modVinylHelpers.bas had max bin count, did the rebin logic, had some sort order logicm sortkey3 override hack, logging, tasklist, 
+modTagging.bas tagging masterkey function for load forr
+modLogging.bas changelog
+modBulkUpload.bas some masterkey generation and modification, bulk upload function, alphabucket hack for ignoring the and a
+modAlphaBucket.bas old alpha bucket code
+modHelpers.bas some sorting functionality

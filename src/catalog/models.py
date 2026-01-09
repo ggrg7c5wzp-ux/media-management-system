@@ -108,13 +108,25 @@ class StorageZone(models.Model):
     """
     A storage 'area' that has its own bin universe (e.g., Garage Main vs Office Shelf).
     """
-    code = models.CharField(max_length=50, unique=True)   # e.g., GARAGE_MAIN
-    name = models.CharField(max_length=100)               # e.g., Garage Main
+
+    class SortStrategy(models.TextChoices):
+        BUCKETED = "BUCKETED", "Bucketed (uses bucket bin ranges)"
+        ALPHA_ONLY = "ALPHA_ONLY", "Alpha-only (ignores buckets)"
+
+    code = models.CharField(max_length=50, unique=True)  # e.g., GARAGE_MAIN
+    name = models.CharField(max_length=100)              # e.g., Garage Main
     description = models.CharField(max_length=255, blank=True, default="")
-    is_binned = models.BooleanField(default=True)         # future-proof: a zone could be non-binned
+    is_binned = models.BooleanField(default=True)        # future-proof: a zone could be non-binned
+
+    sort_strategy = models.CharField(
+        max_length=16,
+        choices=SortStrategy.choices,
+        default=SortStrategy.BUCKETED,
+    )
 
     def __str__(self) -> str:
         return self.name
+
 
 
 class MediaType(models.Model):
