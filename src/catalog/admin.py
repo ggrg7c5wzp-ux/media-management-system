@@ -87,8 +87,8 @@ class BinMappingAdmin(admin.ModelAdmin):
 
 @admin.register(MediaItem)
 class MediaItemAdmin(admin.ModelAdmin):
-    list_display = ("artist", "title", "media_type", "bucket", "effective_zone_display", "placement_status", "logical bin", "physical_bin_display")
-    list_filter = ("media_type", "bucket", "media_type__default_zone")
+    list_display = ("artist", "title", "media_type", "Owner", "bucket", "effective_zone_display", "placement_status", "logical bin", "physical_bin_display")
+    list_filter = ("media_type", "bucket", "Owner",  "media_type__default_zone")
     search_fields = ("title", "artist__artist_name_primary", "artist__artist_name_secondary")
     autocomplete_fields = ("artist", "media_type", "zone_override")
 
@@ -144,7 +144,7 @@ class MediaItemAdmin(admin.ModelAdmin):
         )
     fieldsets = (
         ("Core info", {
-            "fields": ("artist", "title", "pressing_year"),
+            "fields": ("artist", "title", "owner", "pressing_year"),
             }),
         ("Classification inputs", {
             "fields": ("media_type", "bucket", "zone_override"),

@@ -132,7 +132,11 @@ class MediaType(models.Model):
 
     def __str__(self) -> str:
         return self.name
-
+    
+class CollectionOwner(models.TextChoices):
+    ME = "ME", "Mine"
+    BIL = "BIL", "Brother-in-law"
+    
 class MediaItem(models.Model):
     artist = models.ForeignKey("Artist", on_delete=models.PROTECT, related_name="media_items")
     title = models.CharField(max_length=255)
@@ -181,6 +185,12 @@ class MediaItem(models.Model):
     blank=True,
     on_delete=models.PROTECT,
     related_name="media_items",
+    )
+    
+    owner = models.CharField(
+        max_length=10,
+        choices=CollectionOwner.choices,
+        default=CollectionOwner.ME,
 )
 
 class PhysicalBin(models.Model):
@@ -305,3 +315,4 @@ class BucketBinRange(models.Model):
 
     def __str__(self) -> str:
         return f"{self.zone.code} | {self.bucket.name}: {self.start_bin}-{self.end_bin}"
+    
