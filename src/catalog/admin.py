@@ -27,10 +27,10 @@ class MediaItemInline(admin.TabularInline):
 
     fields = (
         "title",
-        "media_type",
         "pressing_year",
-        "owner",
-        "bucket",
+        "release_year",
+        "media_type",
+        "physical_bin",
     )
     readonly_fields = fields
     autocomplete_fields = ("media_type", "bucket")
@@ -45,6 +45,7 @@ class MediaItemAdminForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         # Enforce required fields in Admin UI
+        self.fields["release_year"].required = False
         self.fields["pressing_year"].required = True
         self.fields["bucket"].required = True
 
@@ -53,10 +54,6 @@ class MediaItemAdminForm(forms.ModelForm):
 class ArtistAdmin(admin.ModelAdmin):
     list_display = (
         "display_name",
-        "artist_type",
-        "alpha_bucket",
-        "sort_name",
-        "updated_at",
     )
     list_filter = ("artist_type", "alpha_bucket")
     search_fields = (
@@ -169,23 +166,21 @@ class MediaItemAdmin(admin.ModelAdmin):
     list_display = (
         "artist",
         "title",
+        "release_year",
         "media_type",
-        "owner",
         "bucket",
-        "effective_zone_display",
         "placement_status",
-        "logical_bin",
         "physical_bin_display",
     )
     list_filter = ("media_type", "bucket", "owner", "media_type__default_zone")
-    search_fields = ("title", "artist__artist_name_primary", "artist__artist_name_secondary")
+    search_fields = ("title", "artist__artist_name_primary", "artist__artist_name_secondary", "master_key")
     autocomplete_fields = ("artist", "media_type", "zone_override", "bucket")
 
     # ---- Detail page layout ----
     fieldsets = (
-        ("Core info", {"fields": ("artist", "title", "owner", "pressing_year")}),
+        ("Core info", {"fields": ("artist", "title", "owner", "release_year", "pressing_year")}),
         ("Classification inputs", {"fields": ("media_type", "bucket", "zone_override")}),
-        ("Placement (read-only)", {"fields": ("placement_status", "logical_bin", "physical_bin_display")}),
+        ("Placement (read-only)", {"fields": ("master_key", "placement_status", "logical_bin", "physical_bin_display")}),
     )
 
     form = MediaItemAdminForm

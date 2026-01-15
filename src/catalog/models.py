@@ -356,10 +356,19 @@ class BinMapping(models.Model):
 
 
 class MediaItem(models.Model):
+    master_key = models.CharField(
+    max_length=20,
+    null=True,
+    blank=True,
+    unique=True,
+    db_index=True,
+    help_text="Stable ID from the legacy catalog (e.g., A1234). Used for idempotent imports.",
+)
     artist = models.ForeignKey("Artist", on_delete=models.PROTECT, related_name="media_items")
     title = models.CharField(max_length=255)
     pressing_year = models.PositiveIntegerField(null=True, blank=True)
-
+    release_year = models.PositiveBigIntegerField(null=True, blank=True)
+    
     media_type = models.ForeignKey("MediaType", on_delete=models.PROTECT, related_name="media_items")
 
     owner = models.CharField(
@@ -408,10 +417,10 @@ class MediaItem(models.Model):
         return mapping.physical_bin if mapping and mapping.is_active else None
 
     def __str__(self) -> str:
-        return f"{self.artist} — {self.title}"
+        return f"{self.title}"
 
     class Meta:
-        ordering = ["artist__sort_name", "title"]
+        ordering = ["title"]
 
 
 class BucketBinRange(models.Model):

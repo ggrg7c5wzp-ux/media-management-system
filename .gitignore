@@ -12,6 +12,11 @@ __pycache__/
 *.accdb
 *.mdb
 *.laccdb
+*.xlsx
+
 
 *.docx
 Legacy/
+*.log
+media/
+staticfiles/
