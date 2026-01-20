@@ -1,0 +1,40 @@
+{% extends "catalog/base.html" %}
+{% block title %}Catalog{% endblock %}
+
+{% block content %}
+<h1>Catalog</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>Artist</th>
+      <th>Title</th>
+      <th>Year</th>
+      <th>Zone / Bin</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for it in items %}
+      <tr>
+        <td>
+          <a href="/artists/{{ it.artist_id }}/">
+            {{ it.artist.display_name }}
+          </a>
+        </td>
+        <td>{{ it.title }}</td>
+        <td>{{ it.pressing_year }}</td>
+        <td>
+          {% if it.effective_zone %}{{ it.effective_zone.code }}{% endif %}
+          {% if it.logical_bin %} / {{ it.logical_bin }}{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if is_paginated %}
+  <p class="muted">
+    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+  </p>
+{% endif %}
+{% endblock %}

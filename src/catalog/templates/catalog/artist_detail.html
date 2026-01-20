@@ -1,0 +1,29 @@
+{% extends "catalog/base.html" %}
+{% block title %}{{ artist.display_name }}{% endblock %}
+
+{% block content %}
+<h1>{{ artist.display_name }}</h1>
+<p class="muted">{{ artist.artist_type }}</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Year</th>
+      <th>Zone / Bin</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for it in items %}
+      <tr>
+        <td>{{ it.title }}</td>
+        <td>{{ it.pressing_year }}</td>
+        <td>
+          {% if it.effective_zone %}{{ it.effective_zone.code }}{% endif %}
+          {% if it.logical_bin %} / {{ it.logical_bin }}{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

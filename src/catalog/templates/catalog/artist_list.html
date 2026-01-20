@@ -1,0 +1,18 @@
+{% extends "catalog/base.html" %}
+{% block title %}Artists{% endblock %}
+
+{% block content %}
+<h1>Artists</h1>
+
+<ul>
+  {% for a in artists %}
+    <li><a href="/artists/{{ a.id }}/">{{ a.display_name }}</a></li>
+  {% endfor %}
+</ul>
+
+{% if is_paginated %}
+  <p class="muted">
+    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+  </p>
+{% endif %}
+{% endblock %}
