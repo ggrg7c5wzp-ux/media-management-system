@@ -13,19 +13,33 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 from dotenv import load_dotenv
 import os
+from urllib.parse import urlparse
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
+
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv() 
+load_dotenv(BASE_DIR / ".env")
+def env_bool(name: str, default: bool = False) -> bool:
+    val = os.getenv(name)
+    if val is None:
+        return default
+    return val.strip().lower() in {"1", "true", "yes", "on"}
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ["SECRET_KEY"]  # raises loudly if missing (good)
+DEBUG = env_bool("DEBUG", default=False)
+
+def env_list(name: str, default: list[str] | None = None) -> list[str]:
+    raw = os.getenv(name, "")
+    if not raw.strip():
+        return default or []
+    return [x.strip() for x in raw.split(",") if x.strip()]
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0", ".onrender.com",]
-
+CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", default=[])
 
 
 # Application definition
@@ -118,3 +132,28 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+# Database: prefer DATABASE_URL (Render), otherwise fall back to DB_* (local/docker)
+DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL:
+    u = urlparse(DATABASE_URL)
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": u.path.lstrip("/"),
+            "USER": u.username,
+            "PASSWORD": u.password,
+            "HOST": u.hostname,
+            "PORT": u.port or 5432,
+        }
+    }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("DB_NAME", "media_db"),
+            "USER": os.getenv("DB_USER", "media_user"),
+            "PASSWORD": os.getenv("DB_PASSWORD", "media_pass"),
+            "HOST": os.getenv("DB_HOST", "db"),
+            "PORT": os.getenv("DB_PORT", "5432"),
+        }
+    }
