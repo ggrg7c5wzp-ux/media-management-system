@@ -19,3 +19,6 @@ RUN poetry config virtualenvs.create false \
 COPY src /app/src
 
 WORKDIR /app/src
+
+# Start the web service
+CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000}"]

@@ -12,8 +12,10 @@ services:
     depends_on:
       - db
     environment:
-    - TZ=America/New_York
-    
+      TZ: America/New_York
+      # This MUST match what settings.py reads (ALLOWED_HOSTS), not DJANGO_ALLOWED_HOSTS
+      ALLOWED_HOSTS: "localhost,127.0.0.1,0.0.0.0,192.168.5.33"
+
   db:
     image: postgres:16
     environment:

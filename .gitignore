@@ -20,3 +20,6 @@ Legacy/
 *.log
 media/
 staticfiles/
+# Recovery artifacts
+*.RECOVERED.py
+
