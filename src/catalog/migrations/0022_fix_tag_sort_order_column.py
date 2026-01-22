@@ -2,7 +2,7 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("catalog", "0021_fix_tag_sort_order_column"),
+        ("catalog", "0021_add_bins_per_shelf_column"),
     ]
 
     operations = [
