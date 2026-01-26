@@ -17,6 +17,7 @@ RUN poetry config virtualenvs.create false \
 
 # Copy the Django project
 COPY src/ /app/src
+RUN echo "==== /app/src contents ====" && ls -la /app/src && echo "==== find scripts ====" && find /app/src -maxdepth 3 -type d -name scripts -print
 
 WORKDIR /app/src
 
