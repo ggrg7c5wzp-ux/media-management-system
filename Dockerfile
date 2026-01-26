@@ -16,7 +16,7 @@ RUN poetry config virtualenvs.create false \
  && poetry install --no-interaction --no-ansi
 
 # Copy the Django project
-COPY src /app/src
+COPY src/ /app/src
 
 WORKDIR /app/src
 
