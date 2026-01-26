@@ -43,6 +43,8 @@ DEBUG = env_bool("DEBUG", default=False)
 
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", default=[".onrender.com"])
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", default=[])
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
 
 
 INSTALLED_APPS = [
