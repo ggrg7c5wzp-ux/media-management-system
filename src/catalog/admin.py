@@ -70,6 +70,12 @@ class MediaItemInline(admin.TabularInline):
     readonly_fields = fields
     autocomplete_fields = ("media_type", "bucket")
 
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
     @admin.display(description="Physical bin")
     def physical_bin_display_inline(self, obj: MediaItem) -> str:
         pb = getattr(obj, "physical_bin", None)
@@ -180,7 +186,7 @@ class ArtistAdmin(admin.ModelAdmin):
     inlines = [ArtistTagInline, MediaItemInline]
     ordering = ("sort_name",)
 
-    readonly_fields = ("display_name", "sort_name", "alpha_bucket", "created_at", "updated_at")
+    readonly_fields = ("add_media_item_link", "display_name", "sort_name", "alpha_bucket", "created_at", "updated_at")
 
     fieldsets = (
         (
@@ -195,10 +201,19 @@ class ArtistAdmin(admin.ModelAdmin):
                 )
             },
         ),
+        ("Quick actions", {"fields": ("add_media_item_link",)}), 
         ("Computed (read-only)", {"fields": ("display_name", "sort_name", "alpha_bucket")}),
         ("System", {"fields": ("created_at", "updated_at")}),
     )
-
+    
+    @admin.display(description="Quick actions")
+    def add_media_item_link(self, obj):
+        if not obj or not obj.pk:
+            return ""
+        url = reverse("admin:catalog_mediaitem_add")
+        # Preselect artist in the add form
+        return format_html('<a class="button" href="{}?artist={}">+ Add media item for this artist</a>', url, obj.pk)
+    
     @admin.display(description="Media count", ordering="media_item_count")
     def media_item_count_display(self, obj: Artist) -> int:
         return getattr(obj, "media_item_count", 0) or 0
@@ -725,14 +740,49 @@ class RebinRunAdmin(admin.ModelAdmin):
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
-    list_display = ("name", "scope", "sort_order", "slug", "tag_note_preview")
+    list_display = (
+        "name",
+        "scope",
+        "sort_order",
+        "slug",
+        "tag_note_preview",
+        "tagged_count",
+        "view_tagged_objects",
+    )
     list_filter = ("scope",)
     search_fields = ("name", "slug", "tag_note")
     ordering = ("scope", "sort_order", "name")
     prepopulated_fields = {"slug": ("name",)}
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        # annotate counts by scope
+        return qs.annotate(
+            media_item_count=Count("media_item_tags", distinct=True),
+            artist_count=Count("artist_tags", distinct=True),
+        )
 
     @admin.display(description="TagNote")
     def tag_note_preview(self, obj: Tag) -> str:
         if not obj.tag_note:
             return ""
         return Truncator(obj.tag_note).chars(60)
+
+    @admin.display(description="Tagged", ordering="media_item_count")
+    def tagged_count(self, obj: Tag) -> int:
+        if obj.scope == Tag.Scope.MEDIA_ITEM:
+            return getattr(obj, "media_item_count", 0) or 0
+        return getattr(obj, "artist_count", 0) or 0
+
+    @admin.display(description="Open")
+    def view_tagged_objects(self, obj: Tag) -> str:
+        if obj.scope == Tag.Scope.MEDIA_ITEM:
+            url = reverse("admin:catalog_mediaitem_changelist")
+            # uses the built-in ManyToMany filter param name "tags__id__exact"
+            qs = urlencode({"tags__id__exact": obj.pk})
+            return format_html('<a href="{}?{}">View tagged media items</a>', url, qs)
+
+        url = reverse("admin:catalog_artist_changelist")
+        qs = urlencode({"tags__id__exact": obj.pk})
+        return format_html('<a href="{}?{}">View tagged artists</a>', url, qs)
+

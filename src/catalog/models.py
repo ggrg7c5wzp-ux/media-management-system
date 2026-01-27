@@ -106,14 +106,14 @@ class Artist(models.Model):
 
         if self.artist_type == ArtistType.PERSON:
             if not (self.artist_name_primary or "").strip():
-                raise ValueError("Person artists require a first name")
-            if not (self.artist_name_secondary or "").strip():
-                raise ValueError("Person artists require a last name")
+                raise ValueError("Person artists require a primary name")
+            # NOTE: secondary (last name) is optional to support mononyms (Prince, Madonna, Yungblud)
 
         # --- Normalization + Derived fields (base) ---
         if self.artist_type == ArtistType.PERSON:
             first = _normalize_person_name(self.artist_name_primary)
-            last = _normalize_person_name(self.artist_name_secondary)
+            last_raw = (self.artist_name_secondary or "").strip()
+            last = _normalize_person_name(last_raw) if last_raw else ""
 
             suffix = (self.name_suffix or "").strip()
             suffix_map = {
@@ -134,8 +134,14 @@ class Artist(models.Model):
             self.artist_name_primary = first
             self.artist_name_secondary = last
 
-            self.display_name = f"{first} {last}{suffix_part}"
-            self.sort_name = f"{last}, {first}{suffix_part}"
+            if last:
+                # normal person: "First Last", sort "Last, First"
+                self.display_name = f"{first} {last}{suffix_part}"
+                self.sort_name = f"{last}, {first}{suffix_part}"
+            else:
+                # mononym: "Prince", sort "Prince"
+                self.display_name = f"{first}{suffix_part}"
+                self.sort_name = _normalize_sort_name(first)
 
         else:  # BAND
             name = " ".join((self.artist_name_primary or "").strip().split())
@@ -153,7 +159,6 @@ class Artist(models.Model):
         # --- FILE UNDER override (stored fields) ---
         filing = self.filed_under_artist
         if filing is not None:
-            # Ensure we have the fields (in case of deferred load)
             if not getattr(filing, "sort_name", None) or not getattr(filing, "alpha_bucket", None):
                 filing = Artist.objects.only("sort_name", "alpha_bucket").get(pk=filing.pk)
             self.sort_name = filing.sort_name
@@ -161,11 +166,11 @@ class Artist(models.Model):
 
         super().save(*args, **kwargs)
 
-        # Keep dependents in sync when this artist changes.
         Artist.objects.filter(filed_under_artist=self).exclude(pk=self.pk).update(
             sort_name=self.sort_name,
             alpha_bucket=self.alpha_bucket,
         )
+
 
     def __str__(self) -> str:
         return self.display_name
