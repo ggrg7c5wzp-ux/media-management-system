@@ -1,0 +1,39 @@
+{% extends "catalog/base.html" %}
+{% block title %}{{ item.title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-baseline justify-content-between gap-3 flex-wrap">
+  <div>
+    <h1 class="h4 m-0">{{ item.title }}</h1>
+    <div class="text-secondary">
+      by <a href="{% url 'catalog_public:artist_detail' item.artist_id %}">{{ item.artist.display_name }}</a>
+    </div>
+  </div>
+  <a class="btn btn-sm btn-outline-secondary" href="{% url 'catalog_public:catalog_list' %}">Back to catalog</a>
+</div>
+
+<div class="card mt-3">
+  <div class="card-body">
+    <dl class="row mb-0">
+      <dt class="col-sm-3">Media type</dt>
+      <dd class="col-sm-9">{{ item.media_type.name }}</dd>
+
+      <dt class="col-sm-3">Pressing year</dt>
+      <dd class="col-sm-9 mono">{% if item.pressing_year %}{{ item.pressing_year }}{% else %}—{% endif %}</dd>
+
+      <dt class="col-sm-3">Release year</dt>
+      <dd class="col-sm-9 mono">{% if item.release_year %}{{ item.release_year }}{% else %}—{% endif %}</dd>
+
+      <dt class="col-sm-3">Location</dt>
+      <dd class="col-sm-9 mono">
+        {% if item.effective_zone %}{{ item.effective_zone.code }}{% else %}—{% endif %}
+        {% if item.physical_bin %} / {{ item.physical_bin }}{% endif %}
+        {% if item.logical_bin %}<span class="text-secondary"> ({{ item.logical_bin }})</span>{% endif %}
+      </dd>
+
+      <dt class="col-sm-3">Master key</dt>
+      <dd class="col-sm-9 mono">{% if item.master_key %}{{ item.master_key }}{% else %}—{% endif %}</dd>
+    </dl>
+  </div>
+</div>
+{% endblock %}

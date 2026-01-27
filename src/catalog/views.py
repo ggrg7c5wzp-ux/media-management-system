@@ -1,4 +1,5 @@
 # src/catalog/views.py
+from django.db.models import Q
 from django.views.generic import ListView, DetailView
 
 from .models import Artist, MediaItem
@@ -11,11 +12,25 @@ class CatalogListView(ListView):
     paginate_by = 50
 
     def get_queryset(self):
-        return (
+        qs = (
             MediaItem.objects
             .select_related("artist", "media_type", "logical_bin", "bucket", "zone_override")
             .order_by("artist__sort_name", "title", "pk")
         )
+
+        q = (self.request.GET.get("q") or "").strip()
+        if q:
+            qs = qs.filter(
+                Q(title__icontains=q)
+                | Q(artist__display_name__icontains=q)
+                | Q(artist__sort_name__icontains=q)
+            )
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["q"] = (self.request.GET.get("q") or "").strip()
+        return ctx
 
 
 class ArtistListView(ListView):
@@ -25,7 +40,16 @@ class ArtistListView(ListView):
     paginate_by = 100
 
     def get_queryset(self):
-        return Artist.objects.all().order_by("sort_name", "display_name", "pk")
+        qs = Artist.objects.all().order_by("sort_name", "display_name", "pk")
+        q = (self.request.GET.get("q") or "").strip()
+        if q:
+            qs = qs.filter(Q(display_name__icontains=q) | Q(sort_name__icontains=q))
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["q"] = (self.request.GET.get("q") or "").strip()
+        return ctx
 
 
 class ArtistDetailView(DetailView):
@@ -36,10 +60,29 @@ class ArtistDetailView(DetailView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         artist = self.get_object()
-        ctx["items"] = (
+
+        q = (self.request.GET.get("q") or "").strip()
+        items = (
             MediaItem.objects
             .filter(artist=artist)
             .select_related("media_type", "logical_bin", "bucket", "zone_override")
             .order_by("title", "pk")
         )
+        if q:
+            items = items.filter(Q(title__icontains=q))
+
+        ctx["items"] = items
+        ctx["q"] = q
         return ctx
+
+
+class MediaItemDetailView(DetailView):
+    model = MediaItem
+    template_name = "catalog/item_detail.html"
+    context_object_name = "item"
+
+    def get_queryset(self):
+        return (
+            MediaItem.objects
+            .select_related("artist", "media_type", "logical_bin", "bucket", "zone_override")
+        )
