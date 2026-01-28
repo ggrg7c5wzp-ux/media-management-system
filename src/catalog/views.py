@@ -33,23 +33,59 @@ class CatalogListView(ListView):
         return ctx
 
 
+from django.db.models import Q, Count
+from django.views.generic import ListView, DetailView
+
+from .models import Artist, MediaItem
+
+
 class ArtistListView(ListView):
     model = Artist
     template_name = "catalog/artist_list.html"
     context_object_name = "artists"
-    paginate_by = 100
+    paginate_by = 200  # only used when we’re actually showing a list
 
     def get_queryset(self):
-        qs = Artist.objects.all().order_by("sort_name", "display_name", "pk")
+        qs = (
+            Artist.objects
+            .all()
+            .annotate(item_count=Count("media_items", distinct=True))
+            .order_by("sort_name", "display_name", "pk")
+        )
+
         q = (self.request.GET.get("q") or "").strip()
+        letter = (self.request.GET.get("letter") or "").strip().upper()
+
+        # Search mode (overrides letters)
         if q:
-            qs = qs.filter(Q(display_name__icontains=q) | Q(sort_name__icontains=q))
-        return qs
+            return qs.filter(Q(display_name__icontains=q) | Q(sort_name__icontains=q))
+
+        # Browse-by-letter mode
+        if letter:
+            if letter == "#":
+                # non A-Z bucket
+                return qs.exclude(alpha_bucket__range=("A", "Z"))
+            return qs.filter(alpha_bucket=letter)
+
+        # No search and no letter selected:
+        # return empty list; template will show the A-Z directory UI
+        return qs.none()
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["q"] = (self.request.GET.get("q") or "").strip()
+
+        q = (self.request.GET.get("q") or "").strip()
+        letter = (self.request.GET.get("letter") or "").strip().upper()
+
+        ctx["q"] = q
+        ctx["letter"] = letter
+
+        # Counts for the A-Z directory (only needed when not searching)
+        counts_qs = Artist.objects.values("alpha_bucket").annotate(c=Count("id"))
+        ctx["letter_counts"] = {row["alpha_bucket"]: row["c"] for row in counts_qs}
+
         return ctx
+
 
 
 class ArtistDetailView(DetailView):
