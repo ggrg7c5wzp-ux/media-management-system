@@ -1,64 +1,135 @@
 {% extends "catalog/base.html" %}
-{% block title %}Catalog{% endblock %}
+{% block title %}Records{% endblock %}
 
 {% block nav_search %}
-<form class="d-flex" role="search" method="get" action="{% url 'catalog_public:catalog_list' %}">
-  <input class="form-control me-2" type="search" name="q" placeholder="Search artist or title…" value="{{ q }}">
+<form class="d-flex" method="get" action="{% url 'catalog_public:catalog_list' %}">
+  <input class="form-control me-2" name="q" value="{{ q }}" placeholder="Search title or artist…">
+  {% if media %}<input type="hidden" name="media" value="{{ media }}">{% endif %}
+  {% if zone %}<input type="hidden" name="zone" value="{{ zone }}">{% endif %}
   <button class="btn btn-outline-secondary" type="submit">Search</button>
 </form>
 {% endblock %}
 
 {% block content %}
 <div class="d-flex align-items-baseline justify-content-between gap-3 flex-wrap">
-  <h1 class="h3 m-0">Catalog</h1>
-  {% if q %}
-    <div class="text-secondary">Showing results for <span class="fw-semibold">“{{ q }}”</span></div>
-  {% endif %}
+  <h1 class="h3 m-0">Records</h1>
+  <div class="text-secondary">
+    {% if q or media or zone %}
+      Filtered results
+    {% else %}
+      Everything in the catalog
+    {% endif %}
+  </div>
 </div>
 
+<!-- Admin-style filter bar -->
+<form method="get" class="mt-3 p-3 rounded-3"
+      style="border:1px solid rgba(255,216,158,.12); background:rgba(0,0,0,.08);">
+  <div class="row g-2 align-items-end">
+    <div class="col-12 col-lg-5">
+      <label class="form-label text-secondary mb-1">Search</label>
+      <input class="form-control" name="q" value="{{ q }}" placeholder="Title or artist…">
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-3">
+      <label class="form-label text-secondary mb-1">Media</label>
+      <select class="form-select" name="media"
+              style="background:rgba(10,7,5,0.65); border:1px solid rgba(255,216,158,.14); color:rgba(255,238,209,.92);">
+        <option value="">All</option>
+        {% for mt in media_types %}
+          <option value="{{ mt.id }}" {% if media|stringformat:"s" == mt.id|stringformat:"s" %}selected{% endif %}>
+            {{ mt.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-3">
+      <label class="form-label text-secondary mb-1">Zone</label>
+      <select class="form-select" name="zone"
+              style="background:rgba(10,7,5,0.65); border:1px solid rgba(255,216,158,.14); color:rgba(255,238,209,.92);">
+        <option value="">All</option>
+        {% for z in zones %}
+          <option value="{{ z.id }}" {% if zone|stringformat:"s" == z.id|stringformat:"s" %}selected{% endif %}>
+            {{ z.code }} — {{ z.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-12 col-lg-1 d-grid">
+      <button class="btn btn-outline-secondary" type="submit">Apply</button>
+    </div>
+
+    <div class="col-12">
+      <div class="d-flex gap-2 flex-wrap mt-2">
+        {% if q or media or zone %}
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'catalog_public:catalog_list' %}">Clear</a>
+        {% endif %}
+        <span class="text-secondary">
+          Showing <span class="mono">{{ page_obj.paginator.count }}</span> results
+        </span>
+      </div>
+    </div>
+  </div>
+</form>
+
+<!-- Results -->
 <div class="table-responsive mt-3">
   <table class="table table-hover align-middle">
     <thead>
       <tr>
-        <th style="width: 220px;">Artist</th>
-        <th>Title</th>
-        <th style="width: 120px;">Media</th>
-        <th style="width: 90px;">Year</th>
-        <th style="width: 240px;">Location</th>
+        <th style="width:30%;">Artist</th>
+        <th style="width:38%;">Title</th>
+        <th style="width:14%;">Media</th>
+        <th style="width:8%;">Year</th>
+        <th>Location</th>
       </tr>
     </thead>
     <tbody>
-      {% for it in items %}
+      {% for i in items %}
         <tr>
-          <td>
-            <a href="{% url 'catalog_public:artist_detail' it.artist_id %}">
-              {{ it.artist.display_name }}
-            </a>
-          </td>
           <td class="truncate">
-            <a href="{% url 'catalog_public:item_detail' it.id %}">{{ it.title }}</a>
+            <a href="{% url 'catalog_public:artist_detail' i.artist.id %}">{{ i.artist.display_name }}</a>
           </td>
-          <td>{{ it.media_type.name }}</td>
-          <td class="mono">{% if it.pressing_year %}{{ it.pressing_year }}{% else %}—{% endif %}</td>
+
+          <td class="truncate">
+            <a href="{% url 'catalog_public:item_detail' i.pk %}">{{ i.title }}</a>
+            <div class="mono">
+              {% if i.bucket %}{{ i.bucket.code }}{% endif %}
+              {% if i.logical_bin %} • {{ i.logical_bin.code }}{% endif %}
+            </div>
+          </td>
+
+          <td>{{ i.media_type.name }}</td>
+          <td class="mono">{{ i.pressing_year }}</td>
+
           <td class="mono">
-            {% if it.effective_zone %}{{ it.effective_zone.code }}{% else %}—{% endif %}
-            {% if it.physical_bin %} / {{ it.physical_bin }}{% endif %}
-            {% if it.logical_bin %}<span class="text-secondary"> ({{ it.logical_bin }})</span>{% endif %}
+            {% if i.effective_zone %}
+              {{ i.effective_zone.code }}
+            {% else %}
+              —
+            {% endif %}
           </td>
         </tr>
       {% empty %}
-        <tr><td colspan="5" class="text-secondary py-4">No results.</td></tr>
+        <tr><td colspan="5" class="text-secondary py-4">No records found.</td></tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
 
+<!-- Pagination -->
 {% if is_paginated %}
-<nav aria-label="Catalog pages" class="mt-3">
+<nav class="mt-3">
   <ul class="pagination">
     {% if page_obj.has_previous %}
-      <li class="page-item"><a class="page-link" href="?q={{ q|urlencode }}&page=1">First</a></li>
-      <li class="page-item"><a class="page-link" href="?q={{ q|urlencode }}&page={{ page_obj.previous_page_number }}">Prev</a></li>
+      <li class="page-item">
+        <a class="page-link" href="?q={{ q|urlencode }}&media={{ media|urlencode }}&zone={{ zone|urlencode }}&page=1">First</a>
+      </li>
+      <li class="page-item">
+        <a class="page-link" href="?q={{ q|urlencode }}&media={{ media|urlencode }}&zone={{ zone|urlencode }}&page={{ page_obj.previous_page_number }}">Prev</a>
+      </li>
     {% else %}
       <li class="page-item disabled"><span class="page-link">First</span></li>
       <li class="page-item disabled"><span class="page-link">Prev</span></li>
@@ -69,8 +140,12 @@
     </li>
 
     {% if page_obj.has_next %}
-      <li class="page-item"><a class="page-link" href="?q={{ q|urlencode }}&page={{ page_obj.next_page_number }}">Next</a></li>
-      <li class="page-item"><a class="page-link" href="?q={{ q|urlencode }}&page={{ page_obj.paginator.num_pages }}">Last</a></li>
+      <li class="page-item">
+        <a class="page-link" href="?q={{ q|urlencode }}&media={{ media|urlencode }}&zone={{ zone|urlencode }}&page={{ page_obj.next_page_number }}">Next</a>
+      </li>
+      <li class="page-item">
+        <a class="page-link" href="?q={{ q|urlencode }}&media={{ media|urlencode }}&zone={{ zone|urlencode }}&page={{ page_obj.paginator.num_pages }}">Last</a>
+      </li>
     {% else %}
       <li class="page-item disabled"><span class="page-link">Next</span></li>
       <li class="page-item disabled"><span class="page-link">Last</span></li>

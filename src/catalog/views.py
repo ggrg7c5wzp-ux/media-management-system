@@ -102,6 +102,7 @@ class CatalogListView(ListView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
+
         ctx["q"] = (self.request.GET.get("q") or "").strip()
         ctx["media"] = (self.request.GET.get("media") or "").strip()
         ctx["zone"] = (self.request.GET.get("zone") or "").strip()
@@ -110,6 +111,7 @@ class CatalogListView(ListView):
         ctx["zones"] = StorageZone.objects.all().order_by("code")
 
         return ctx
+
 
 
 # -----------------------------------------------------------------------------
