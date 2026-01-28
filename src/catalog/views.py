@@ -1,8 +1,8 @@
 # src/catalog/views.py
-from django.db.models import Q
-from django.views.generic import ListView, DetailView
+from django.db.models import Q, Count
+from django.views.generic import ListView, DetailView, TemplateView
 
-from .models import Artist, MediaItem
+from .models import Artist, MediaItem, StorageZone
 
 
 class CatalogListView(ListView):
@@ -86,3 +86,22 @@ class MediaItemDetailView(DetailView):
             MediaItem.objects
             .select_related("artist", "media_type", "logical_bin", "bucket", "zone_override")
         )
+class DashboardView(TemplateView):
+    template_name = "catalog/dashboard.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+
+        ctx["counts"] = {
+            "artists": Artist.objects.count(),
+            "items": MediaItem.objects.count(),
+            "zones": StorageZone.objects.count(),
+        }
+
+        ctx["zones"] = (
+            StorageZone.objects
+            .annotate(item_count=Count("media_items", distinct=True))
+            .order_by("code")
+        )
+
+        return ctx

@@ -1,0 +1,93 @@
+{% extends "catalog/base.html" %}
+{% block title %}Catalog{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-baseline justify-content-between gap-3 flex-wrap">
+  <h1 class="h3 m-0">The Tuesday Saloon</h1>
+  <div class="text-secondary">Choose your path.</div>
+</div>
+
+<div class="row g-3 mt-2">
+  <div class="col-12 col-md-6 col-xl-4">
+    <a class="text-decoration-none" href="{% url 'catalog_public:catalog_list' %}">
+      <div class="p-3 rounded-3" style="border:1px solid rgba(255,216,158,.14); background:rgba(0,0,0,.12);">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="ts-brand" style="font-size:22px;">📚 Records</div>
+            <div class="text-secondary">Browse everything</div>
+          </div>
+          <div class="mono" style="font-size:22px;">{{ counts.items }}</div>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-12 col-md-6 col-xl-4">
+    <a class="text-decoration-none" href="{% url 'catalog_public:artist_list' %}">
+      <div class="p-3 rounded-3" style="border:1px solid rgba(255,216,158,.14); background:rgba(0,0,0,.12);">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="ts-brand" style="font-size:22px;">🎤 Artists</div>
+            <div class="text-secondary">Start with the storyteller</div>
+          </div>
+          <div class="mono" style="font-size:22px;">{{ counts.artists }}</div>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-12 col-md-6 col-xl-4">
+    <div class="p-3 rounded-3" style="border:1px solid rgba(255,216,158,.14); background:rgba(0,0,0,.12);">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="ts-brand" style="font-size:22px;">📦 Storage Zones</div>
+          <div class="text-secondary">Physical world map (next)</div>
+        </div>
+        <div class="mono" style="font-size:22px;">{{ counts.zones }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mt-4">
+  <h2 class="h5 mb-2">Zones</h2>
+  <div class="row g-2">
+    {% for z in zones %}
+      <div class="col-12 col-md-6 col-xl-4">
+        <div class="p-3 rounded-3" style="border:1px solid rgba(255,216,158,.10); background:rgba(0,0,0,.08);">
+          <div class="d-flex justify-content-between">
+            <div>
+              <div class="fw-semibold">{{ z.name }}</div>
+              <div class="mono">{{ z.code }}</div>
+            </div>
+            <div class="mono">{{ z.item_count }}</div>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="text-secondary">No zones found.</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="mt-4">
+  <h2 class="h5 mb-2">Curated</h2>
+  <div class="row g-2">
+    <div class="col-12 col-md-6 col-xl-4">
+      <div class="p-3 rounded-3 text-secondary" style="border:1px dashed rgba(255,216,158,.18); background:rgba(0,0,0,.06);">
+        ⭐ Mike’s Picks (coming)
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-4">
+      <div class="p-3 rounded-3 text-secondary" style="border:1px dashed rgba(255,216,158,.18); background:rgba(0,0,0,.06);">
+        🆕 New Additions (coming)
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-4">
+      <div class="p-3 rounded-3 text-secondary" style="border:1px dashed rgba(255,216,158,.18); background:rgba(0,0,0,.06);">
+        🏷️ Tags (coming)
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
