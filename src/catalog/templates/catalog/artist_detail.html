@@ -52,8 +52,8 @@
         {% for row in by_zone %}
           <div class="d-flex justify-content-between align-items-center py-1">
             <div>
-              <div class="fw-semibold">{{ row.storage_zone__name }}</div>
-              <div class="mono">{{ row.storage_zone__code }}</div>
+              <div class="fw-semibold">{{ row.name }}</div>
+              <div class="mono">{{ row.code }}</div>
             </div>
             <div class="mono">{{ row.c }}</div>
           </div>
@@ -85,12 +85,16 @@
         {% for i in items %}
           <tr>
             <td class="truncate">
-              <a href="{% url 'catalog_public:item_detail' i.id %}">{{ i.title }}</a>
+              <a href="{% url 'catalog_public:item_detail' i.pk %}">{{ i.title }}</a>
             </td>
             <td>{{ i.media_type.name }}</td>
             <td class="mono">{{ i.pressing_year }}</td>
             <td class="mono">
-              {{ i.storage_zone.code }}
+              {% if i.effective_zone %}
+                {{ i.effective_zone.code }}
+              {% else %}
+                —
+              {% endif %}
               {% if i.location_path %}<br>{{ i.location_path }}{% endif %}
             </td>
           </tr>
