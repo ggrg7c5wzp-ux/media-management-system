@@ -95,20 +95,39 @@ class ArtistDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        artist = self.get_object()
+        artist = self.object
 
-        q = (self.request.GET.get("q") or "").strip()
-        items = (
+        # Records for this artist
+        items_qs = (
             MediaItem.objects
             .filter(artist=artist)
-            .select_related("media_type", "logical_bin", "bucket", "zone_override")
-            .order_by("title", "pk")
+            .select_related("media_type", "storage_zone")
+            .order_by("title", "pressing_year", "pk")
         )
-        if q:
-            items = items.filter(Q(title__icontains=q))
 
-        ctx["items"] = items
-        ctx["q"] = q
+        ctx["items"] = items_qs
+        ctx["item_count"] = items_qs.count()
+
+        # Breakdown by Media Type
+        ctx["by_media_type"] = (
+            items_qs.values("media_type__name")
+            .annotate(c=Count("id"))
+            .order_by("-c", "media_type__name")
+        )
+
+        # Breakdown by Storage Zone
+        ctx["by_zone"] = (
+            items_qs.values("storage_zone__name", "storage_zone__code")
+            .annotate(c=Count("id"))
+            .order_by("-c", "storage_zone__name")
+        )
+
+        # Optional: year range (helps “profile” feel)
+        years = list(items_qs.values_list("pressing_year", flat=True))
+        years = [y for y in years if y]
+        ctx["year_min"] = min(years) if years else None
+        ctx["year_max"] = max(years) if years else None
+
         return ctx
 
 

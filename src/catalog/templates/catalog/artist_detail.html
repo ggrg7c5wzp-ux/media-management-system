@@ -1,50 +1,104 @@
 {% extends "catalog/base.html" %}
 {% block title %}{{ artist.display_name }}{% endblock %}
 
-{% block nav_search %}
-<form class="d-flex" role="search" method="get" action="{% url 'catalog_public:artist_detail' artist.id %}">
-  <input class="form-control me-2" type="search" name="q" placeholder="Search this artist’s titles…" value="{{ q }}">
-  <button class="btn btn-outline-secondary" type="submit">Search</button>
-</form>
-{% endblock %}
-
 {% block content %}
-<div class="d-flex align-items-baseline justify-content-between gap-3 flex-wrap">
+<div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
   <div>
     <h1 class="h3 m-0">{{ artist.display_name }}</h1>
-    <div class="text-secondary">{{ artist.artist_type }}</div>
+    <div class="text-secondary mt-1">
+      <span class="mono">{{ artist.sort_name }}</span>
+      {% if artist.artist_type %}
+        <span class="ms-2 badge text-bg-light">{{ artist.artist_type }}</span>
+      {% endif %}
+    </div>
+
+    <div class="text-secondary mt-2">
+      <span class="mono">{{ item_count }}</span> records
+      {% if year_min and year_max %}
+        <span class="mx-2">•</span>
+        <span class="mono">{{ year_min }}–{{ year_max }}</span>
+      {% endif %}
+    </div>
   </div>
-  <a class="btn btn-sm btn-outline-secondary" href="{% url 'catalog_public:artist_list' %}">Back to artists</a>
+
+  <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-outline-secondary" href="{% url 'catalog_public:artist_list' %}">← Artists</a>
+    <a class="btn btn-outline-secondary" href="{% url 'catalog_public:catalog_list' %}">Records</a>
+  </div>
 </div>
 
-<div class="table-responsive mt-3">
-  <table class="table table-hover align-middle">
-    <thead>
-      <tr>
-        <th>Title</th>
-        <th style="width: 120px;">Media</th>
-        <th style="width: 90px;">Year</th>
-        <th style="width: 240px;">Location</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for it in items %}
+<hr style="border-color: rgba(255,216,158,.14);">
+
+<div class="row g-3">
+  <div class="col-12 col-lg-6">
+    <div class="p-3 rounded-3" style="border:1px solid rgba(255,216,158,.12); background:rgba(0,0,0,.08);">
+      <div class="ts-brand" style="font-size:18px;">By Media</div>
+      <div class="mt-2 d-flex flex-wrap gap-2">
+        {% for row in by_media_type %}
+          <span class="badge text-bg-light">
+            {{ row.media_type__name }} <span class="mono ms-1">{{ row.c }}</span>
+          </span>
+        {% empty %}
+          <span class="text-secondary">No media breakdown.</span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="p-3 rounded-3" style="border:1px solid rgba(255,216,158,.12); background:rgba(0,0,0,.08);">
+      <div class="ts-brand" style="font-size:18px;">Where It Lives</div>
+      <div class="mt-2">
+        {% for row in by_zone %}
+          <div class="d-flex justify-content-between align-items-center py-1">
+            <div>
+              <div class="fw-semibold">{{ row.storage_zone__name }}</div>
+              <div class="mono">{{ row.storage_zone__code }}</div>
+            </div>
+            <div class="mono">{{ row.c }}</div>
+          </div>
+        {% empty %}
+          <span class="text-secondary">No zone breakdown.</span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mt-4">
+  <div class="d-flex align-items-baseline justify-content-between gap-2 flex-wrap">
+    <h2 class="h5 m-0">Records</h2>
+    <div class="text-secondary">Sorted by title</div>
+  </div>
+
+  <div class="table-responsive mt-2">
+    <table class="table table-hover align-middle">
+      <thead>
         <tr>
-          <td class="truncate">
-            <a href="{% url 'catalog_public:item_detail' it.id %}">{{ it.title }}</a>
-          </td>
-          <td>{{ it.media_type.name }}</td>
-          <td class="mono">{% if it.pressing_year %}{{ it.pressing_year }}{% else %}—{% endif %}</td>
-          <td class="mono">
-            {% if it.effective_zone %}{{ it.effective_zone.code }}{% else %}—{% endif %}
-            {% if it.physical_bin %} / {{ it.physical_bin }}{% endif %}
-            {% if it.logical_bin %}<span class="text-secondary"> ({{ it.logical_bin }})</span>{% endif %}
-          </td>
+          <th style="width:42%;">Title</th>
+          <th style="width:16%;">Media</th>
+          <th style="width:10%;">Year</th>
+          <th>Location</th>
         </tr>
-      {% empty %}
-        <tr><td colspan="4" class="text-secondary py-4">No results.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        {% for i in items %}
+          <tr>
+            <td class="truncate">
+              <a href="{% url 'catalog_public:item_detail' i.id %}">{{ i.title }}</a>
+            </td>
+            <td>{{ i.media_type.name }}</td>
+            <td class="mono">{{ i.pressing_year }}</td>
+            <td class="mono">
+              {{ i.storage_zone.code }}
+              {% if i.location_path %}<br>{{ i.location_path }}{% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="text-secondary py-4">No records found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 {% endblock %}
