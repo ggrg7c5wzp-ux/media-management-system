@@ -6,6 +6,8 @@ from .views import (
     ArtistListView,
     ArtistDetailView,
     MediaItemDetailView,
+    TagListView,
+    TagDetailView,
 )
 
 app_name = "catalog_public"
@@ -22,4 +24,6 @@ urlpatterns = [
 
     # Optional: keep a dashboard if you want it
     path("dashboard/", DashboardView.as_view(), name="dashboard"),
+    path("tags/", TagListView.as_view(), name="tag_list"),
+    path("tags/<int:pk>/", TagDetailView.as_view(), name="tag_detail"),
 ]

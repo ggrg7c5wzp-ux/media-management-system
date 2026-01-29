@@ -17,13 +17,13 @@ services:
       ALLOWED_HOSTS: "localhost,127.0.0.1,0.0.0.0,192.168.5.33"
 
   db:
-    image: postgres:16
+    image: postgres:18
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
 
 volumes:
   postgres_data:

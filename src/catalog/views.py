@@ -1,11 +1,25 @@
 # src/catalog/views.py
 
-from collections import Counter
+from __future__ import annotations
 
-from django.db.models import Q, Count
+from collections import Counter
+from typing import cast
+from urllib.parse import urlencode
+
+from django.db.models import Q, Count, Prefetch
 from django.views.generic import ListView, DetailView, TemplateView
 
-from .models import Artist, MediaItem, StorageZone, MediaType
+from .models import Artist, MediaItem, StorageZone, MediaType, Tag
+
+
+# -----------------------------------------------------------------------------
+# Helpers
+# -----------------------------------------------------------------------------
+
+def _base_qs(params: dict) -> str:
+    """Build a safe querystring without empty values (no leading '?')."""
+    clean = {k: v for k, v in params.items() if v not in ("", None)}
+    return urlencode(clean)
 
 
 # -----------------------------------------------------------------------------
@@ -26,15 +40,12 @@ class DashboardView(TemplateView):
 
         zones = list(StorageZone.objects.all().order_by("code"))
 
-        # Count items by effective zone (property):
-        # effective_zone = zone_override OR media_type.default_zone
         items = (
             MediaItem.objects
             .select_related("media_type", "media_type__default_zone", "zone_override")
             .only("id", "media_type_id", "zone_override_id")
         )
 
-        # Avoid .id complaints: key the counter by zone.code (string)
         counter = Counter()
         for it in items:
             z = it.effective_zone
@@ -42,14 +53,9 @@ class DashboardView(TemplateView):
                 counter[z.code] += 1
 
         ctx["zones"] = [
-            {
-                "code": z.code,
-                "name": z.name,
-                "item_count": counter.get(z.code, 0),
-            }
+            {"code": z.code, "name": z.name, "item_count": counter.get(z.code, 0)}
             for z in zones
         ]
-
         return ctx
 
 
@@ -92,10 +98,9 @@ class CatalogListView(ListView):
             qs = qs.filter(media_type__id=media)
 
         if zone:
-            # effective zone = zone_override OR (zone_override is null and media_type.default_zone = zone)
             qs = qs.filter(
                 Q(zone_override__id=zone)
-                | Q(zone_override__isnull=True, media_type__default_zone__id=zone)
+                | Q(zone_override__isnull=True, media_type__default_zone_id=zone)
             )
 
         return qs
@@ -110,8 +115,10 @@ class CatalogListView(ListView):
         ctx["media_types"] = MediaType.objects.all().order_by("name")
         ctx["zones"] = StorageZone.objects.all().order_by("code")
 
+        ctx["base_qs"] = _base_qs({"q": ctx["q"], "media": ctx["media"], "zone": ctx["zone"]})
+        ctx["list_url_name"] = "catalog_public:catalog_list"
+        ctx["active_tag"] = None
         return ctx
-
 
 
 # -----------------------------------------------------------------------------
@@ -135,10 +142,7 @@ class ArtistListView(ListView):
         letter = (self.request.GET.get("letter") or "").strip().upper()
 
         if q:
-            return qs.filter(
-                Q(display_name__icontains=q)
-                | Q(sort_name__icontains=q)
-            )
+            return qs.filter(Q(display_name__icontains=q) | Q(sort_name__icontains=q))
 
         if letter:
             if letter == "#":
@@ -161,7 +165,6 @@ class ArtistListView(ListView):
 
         ctx["letters"] = [{"ch": ch, "count": counts.get(ch, 0)} for ch in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"]
         ctx["letters"].append({"ch": "#", "count": counts.get("#", 0)})
-
         return ctx
 
 
@@ -174,9 +177,16 @@ class ArtistDetailView(DetailView):
     template_name = "catalog/artist_detail.html"
     context_object_name = "artist"
 
+    def get_queryset(self):
+        return Artist.objects.prefetch_related(
+            Prefetch("tags", queryset=Tag.objects.order_by("sort_order", "name"))
+        )
+
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        artist = self.get_object()
+
+        artist = cast(Artist, self.get_object())
+        ctx["artist_tags"] = list(artist.tags.all())
 
         q = (self.request.GET.get("q") or "").strip()
 
@@ -209,8 +219,7 @@ class ArtistDetailView(DetailView):
         zone_counter = Counter()
         for it in items_qs:
             z = it.effective_zone
-            if z:
-                zone_counter[(z.code, z.name)] += 1
+            zone_counter[(z.code, z.name)] += 1
 
         ctx["by_zone"] = [
             {"code": code, "name": name, "c": count}
@@ -220,6 +229,81 @@ class ArtistDetailView(DetailView):
         years = [y for y in items_qs.values_list("pressing_year", flat=True) if y]
         ctx["year_min"] = min(years) if years else None
         ctx["year_max"] = max(years) if years else None
+
+        return ctx
+
+
+# -----------------------------------------------------------------------------
+# Tags
+# -----------------------------------------------------------------------------
+
+class TagListView(TemplateView):
+    template_name = "catalog/tag_list.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+
+        media_tags = (
+            Tag.objects.filter(scope=Tag.Scope.MEDIA_ITEM)
+            .annotate(
+                item_count=Count("media_items", distinct=True),
+                artist_count=Count("media_items__artist", distinct=True),
+            )
+            .order_by("sort_order", "name")
+        )
+
+        artist_tags = (
+            Tag.objects.filter(scope=Tag.Scope.ARTIST)
+            .annotate(
+                artist_count=Count("artists", distinct=True),
+                item_count=Count("artists__media_items", distinct=True),
+            )
+            .order_by("sort_order", "name")
+        )
+
+        ctx["media_tags"] = media_tags
+        ctx["artist_tags"] = artist_tags
+        return ctx
+
+
+class TagDetailView(CatalogListView):
+    """
+    Reuse the Records list UI (filters + pagination), scoped to a tag.
+    """
+
+    def dispatch(self, request, *args, **kwargs):
+        self.tag = Tag.objects.get(pk=kwargs["pk"])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+
+        if self.tag.scope == Tag.Scope.MEDIA_ITEM:
+            qs = qs.filter(tags=self.tag)
+        else:
+            qs = qs.filter(artist__tags=self.tag)
+
+        return qs.distinct()
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+
+        ctx["active_tag"] = self.tag
+        ctx["list_url_name"] = "catalog_public:tag_detail"
+
+        ctx["base_qs"] = _base_qs({
+            "tag": self.tag.pk,
+            "q": ctx["q"],
+            "media": ctx["media"],
+            "zone": ctx["zone"],
+        })
+
+        ctx["tag_item_count"] = ctx["page_obj"].paginator.count
+
+        if self.tag.scope == Tag.Scope.MEDIA_ITEM:
+            ctx["tag_artist_count"] = self.get_queryset().values("artist_id").distinct().count()
+        else:
+            ctx["tag_artist_count"] = Artist.objects.filter(tags=self.tag).distinct().count()
 
         return ctx
 
@@ -244,13 +328,10 @@ class MediaItemDetailView(DetailView):
                 "logical_bin",
                 "bucket",
             )
+            .prefetch_related(Prefetch("tags", queryset=Tag.objects.order_by("sort_order", "name")))
         )
 
     def _filtered_ids(self):
-        """
-        Return a list of IDs in the same ordering as CatalogListView,
-        filtered by q/media/zone (same logic as the records page).
-        """
         qs = (
             MediaItem.objects
             .select_related("artist", "media_type", "media_type__default_zone", "zone_override")
@@ -267,33 +348,34 @@ class MediaItemDetailView(DetailView):
                 | Q(artist__display_name__icontains=q)
                 | Q(artist__sort_name__icontains=q)
             )
+
         if media:
             qs = qs.filter(media_type__id=media)
+
         if zone:
             qs = qs.filter(
                 Q(zone_override__id=zone)
-                | Q(zone_override__isnull=True, media_type__default_zone__id=zone)
+                | Q(zone_override__isnull=True, media_type__default_zone_id=zone)
             )
 
         return list(qs.values_list("id", flat=True)), q, media, zone
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        item = self.object
+
+        item = cast(MediaItem, self.get_object())
+        ctx["item_tags"] = list(item.tags.all())
 
         ids, q, media, zone = self._filtered_ids()
         ctx["q"] = q
         ctx["media"] = media
         ctx["zone"] = zone
 
-        # Back link should return to the records list with the same filters
-        # We’ll keep it simple: list view handles pagination anyway.
-        ctx["back_query"] = f"?q={q}&media={media}&zone={zone}".replace(" ", "%20")
+        ctx["back_query"] = f"?{_base_qs({'q': q, 'media': media, 'zone': zone})}"
 
-        # Prev/Next within current filtered ordering
         prev_id = next_id = None
         try:
-            idx = ids.index(item.id)
+            idx = ids.index(item.pk)
             if idx > 0:
                 prev_id = ids[idx - 1]
             if idx < len(ids) - 1:
@@ -304,10 +386,8 @@ class MediaItemDetailView(DetailView):
         ctx["prev_id"] = prev_id
         ctx["next_id"] = next_id
 
-        # Location fields (your model reality)
         ctx["effective_zone"] = item.effective_zone
         ctx["default_zone"] = item.media_type.default_zone if item.media_type else None
         ctx["override_zone"] = item.zone_override
 
         return ctx
-

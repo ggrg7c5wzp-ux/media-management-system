@@ -2,9 +2,11 @@
 {% block title %}{{ item.title }}{% endblock %}
 
 {% block content %}
-<div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
-  <div>
+<div class="d-flex align-items-start justify-content-between gap-3">
+  <!-- LEFT: Item identity -->
+  <div class="flex-grow-1">
     <h1 class="h3 m-0">{{ item.title }}</h1>
+
     <div class="text-secondary mt-1">
       <a href="{% url 'catalog_public:artist_detail' item.artist.id %}" class="fw-semibold">
         {{ item.artist.display_name }}
@@ -16,18 +18,37 @@
     <div class="d-flex flex-wrap gap-2 mt-2">
       <span class="badge text-bg-light">{{ item.media_type.name }}</span>
       {% if item.pressing_year %}
-        <span class="badge text-bg-light">Year <span class="mono">{{ item.pressing_year }}</span></span>
+        <span class="badge text-bg-light">
+          Year <span class="mono">{{ item.pressing_year }}</span>
+        </span>
       {% endif %}
       {% if item.bucket %}
-        <span class="badge text-bg-light">Bucket <span class="mono">{{ item.bucket.code }}</span></span>
+        <span class="badge text-bg-light">
+          Bucket <span class="mono">{{ item.bucket.code }}</span>
+        </span>
       {% endif %}
       {% if item.logical_bin %}
-        <span class="badge text-bg-light">Bin <span class="mono">{{ item.logical_bin.code }}</span></span>
+        <span class="badge text-bg-light">
+          Bin <span class="mono">{{ item.logical_bin.code }}</span>
+        </span>
       {% endif %}
     </div>
+
+    {% if item_tags %}
+      <div class="d-flex flex-wrap gap-2 mt-2">
+        {% for t in item_tags %}
+          <a class="badge text-bg-light text-decoration-none"
+             style="border:1px solid rgba(255,216,158,.22); background:rgba(0,0,0,.10); color:rgba(255,216,158,.92);"
+             href="{% url 'catalog_public:tag_detail' t.pk %}">
+            🏷️ {{ t.name }}
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
   </div>
 
-  <div class="d-flex gap-2 flex-wrap">
+  <!-- RIGHT: Navigation -->
+  <div class="d-flex gap-2 flex-wrap justify-content-end" style="min-width: 260px;">
     <a class="btn btn-outline-secondary"
        href="{% url 'catalog_public:catalog_list' %}{{ back_query|default:'' }}">
       ← Records
@@ -50,6 +71,7 @@
 </div>
 
 <hr style="border-color: rgba(255,216,158,.14);">
+
 
 <div class="row g-3">
   <div class="col-12 col-lg-6">
