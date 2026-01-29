@@ -245,3 +245,69 @@ class MediaItemDetailView(DetailView):
                 "bucket",
             )
         )
+
+    def _filtered_ids(self):
+        """
+        Return a list of IDs in the same ordering as CatalogListView,
+        filtered by q/media/zone (same logic as the records page).
+        """
+        qs = (
+            MediaItem.objects
+            .select_related("artist", "media_type", "media_type__default_zone", "zone_override")
+            .order_by("artist__sort_name", "title", "pk")
+        )
+
+        q = (self.request.GET.get("q") or "").strip()
+        media = (self.request.GET.get("media") or "").strip()
+        zone = (self.request.GET.get("zone") or "").strip()
+
+        if q:
+            qs = qs.filter(
+                Q(title__icontains=q)
+                | Q(artist__display_name__icontains=q)
+                | Q(artist__sort_name__icontains=q)
+            )
+        if media:
+            qs = qs.filter(media_type__id=media)
+        if zone:
+            qs = qs.filter(
+                Q(zone_override__id=zone)
+                | Q(zone_override__isnull=True, media_type__default_zone__id=zone)
+            )
+
+        return list(qs.values_list("id", flat=True)), q, media, zone
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        item = self.object
+
+        ids, q, media, zone = self._filtered_ids()
+        ctx["q"] = q
+        ctx["media"] = media
+        ctx["zone"] = zone
+
+        # Back link should return to the records list with the same filters
+        # We’ll keep it simple: list view handles pagination anyway.
+        ctx["back_query"] = f"?q={q}&media={media}&zone={zone}".replace(" ", "%20")
+
+        # Prev/Next within current filtered ordering
+        prev_id = next_id = None
+        try:
+            idx = ids.index(item.id)
+            if idx > 0:
+                prev_id = ids[idx - 1]
+            if idx < len(ids) - 1:
+                next_id = ids[idx + 1]
+        except ValueError:
+            pass
+
+        ctx["prev_id"] = prev_id
+        ctx["next_id"] = next_id
+
+        # Location fields (your model reality)
+        ctx["effective_zone"] = item.effective_zone
+        ctx["default_zone"] = item.media_type.default_zone if item.media_type else None
+        ctx["override_zone"] = item.zone_override
+
+        return ctx
+

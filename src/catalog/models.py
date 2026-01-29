@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.text import slugify
+from django.db.models.functions import Lower
 
 # -----------------------------------------------------------------------------
 # Artist
@@ -179,7 +180,15 @@ class Artist(models.Model):
         verbose_name = "Artist"
         verbose_name_plural = "Artists"
         ordering = ["sort_name"]
-
+        constraints = [
+            models.UniqueConstraint(
+                Lower("artist_name_primary"),
+                Lower("artist_name_secondary"),
+                Lower("name_suffix"),
+                "artist_type",
+                name="uniq_artist_identity_ci",
+            )
+        ]
 
 # -----------------------------------------------------------------------------
 # Tagging

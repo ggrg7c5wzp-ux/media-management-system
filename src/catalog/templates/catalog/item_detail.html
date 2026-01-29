@@ -2,38 +2,139 @@
 {% block title %}{{ item.title }}{% endblock %}
 
 {% block content %}
-<div class="d-flex align-items-baseline justify-content-between gap-3 flex-wrap">
+<div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
   <div>
-    <h1 class="h4 m-0">{{ item.title }}</h1>
-    <div class="text-secondary">
-      by <a href="{% url 'catalog_public:artist_detail' item.artist_id %}">{{ item.artist.display_name }}</a>
+    <h1 class="h3 m-0">{{ item.title }}</h1>
+    <div class="text-secondary mt-1">
+      <a href="{% url 'catalog_public:artist_detail' item.artist.id %}" class="fw-semibold">
+        {{ item.artist.display_name }}
+      </a>
+      <span class="mx-2">•</span>
+      <span class="mono">{{ item.artist.sort_name }}</span>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 mt-2">
+      <span class="badge text-bg-light">{{ item.media_type.name }}</span>
+      {% if item.pressing_year %}
+        <span class="badge text-bg-light">Year <span class="mono">{{ item.pressing_year }}</span></span>
+      {% endif %}
+      {% if item.bucket %}
+        <span class="badge text-bg-light">Bucket <span class="mono">{{ item.bucket.code }}</span></span>
+      {% endif %}
+      {% if item.logical_bin %}
+        <span class="badge text-bg-light">Bin <span class="mono">{{ item.logical_bin.code }}</span></span>
+      {% endif %}
     </div>
   </div>
-  <a class="btn btn-sm btn-outline-secondary" href="{% url 'catalog_public:catalog_list' %}">Back to catalog</a>
+
+  <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-outline-secondary"
+       href="{% url 'catalog_public:catalog_list' %}{{ back_query|default:'' }}">
+      ← Records
+    </a>
+
+    {% if prev_id %}
+      <a class="btn btn-outline-secondary"
+         href="{% url 'catalog_public:item_detail' prev_id %}{{ back_query|default:'' }}">
+        ← Prev
+      </a>
+    {% endif %}
+
+    {% if next_id %}
+      <a class="btn btn-outline-secondary"
+         href="{% url 'catalog_public:item_detail' next_id %}{{ back_query|default:'' }}">
+        Next →
+      </a>
+    {% endif %}
+  </div>
 </div>
 
-<div class="card mt-3">
-  <div class="card-body">
-    <dl class="row mb-0">
-      <dt class="col-sm-3">Media type</dt>
-      <dd class="col-sm-9">{{ item.media_type.name }}</dd>
+<hr style="border-color: rgba(255,216,158,.14);">
 
-      <dt class="col-sm-3">Pressing year</dt>
-      <dd class="col-sm-9 mono">{% if item.pressing_year %}{{ item.pressing_year }}{% else %}—{% endif %}</dd>
+<div class="row g-3">
+  <div class="col-12 col-lg-6">
+    <div class="p-3 rounded-3" style="border:1px solid rgba(255,216,158,.12); background:rgba(0,0,0,.08);">
+      <div class="ts-brand" style="font-size:18px;">Where It Lives</div>
 
-      <dt class="col-sm-3">Release year</dt>
-      <dd class="col-sm-9 mono">{% if item.release_year %}{{ item.release_year }}{% else %}—{% endif %}</dd>
+      <div class="mt-2">
+        <div class="text-secondary">Effective Zone</div>
+        <div class="mono" style="font-size:16px;">
+          {% if effective_zone %}
+            {{ effective_zone.code }} — {{ effective_zone.name }}
+          {% else %}
+            —
+          {% endif %}
+        </div>
 
-      <dt class="col-sm-3">Location</dt>
-      <dd class="col-sm-9 mono">
-        {% if item.effective_zone %}{{ item.effective_zone.code }}{% else %}—{% endif %}
-        {% if item.physical_bin %} / {{ item.physical_bin }}{% endif %}
-        {% if item.logical_bin %}<span class="text-secondary"> ({{ item.logical_bin }})</span>{% endif %}
-      </dd>
+        <div class="mt-3 d-flex flex-wrap gap-3">
+          <div>
+            <div class="text-secondary">Default Zone</div>
+            <div class="mono">
+              {% if default_zone %}
+                {{ default_zone.code }} — {{ default_zone.name }}
+              {% else %}
+                —
+              {% endif %}
+            </div>
+          </div>
 
-      <dt class="col-sm-3">Master key</dt>
-      <dd class="col-sm-9 mono">{% if item.master_key %}{{ item.master_key }}{% else %}—{% endif %}</dd>
-    </dl>
+          <div>
+            <div class="text-secondary">Override</div>
+            <div class="mono">
+              {% if override_zone %}
+                {{ override_zone.code }} — {{ override_zone.name }}
+              {% else %}
+                —
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        {% if item.logical_bin %}
+          <div class="mt-3">
+            <div class="text-secondary">Logical Bin</div>
+            <div class="mono">{{ item.logical_bin.code }}</div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="p-3 rounded-3" style="border:1px solid rgba(255,216,158,.12); background:rgba(0,0,0,.08);">
+      <div class="ts-brand" style="font-size:18px;">Details</div>
+
+      <div class="mt-2">
+        <div class="d-flex justify-content-between py-1">
+          <div class="text-secondary">Master Key</div>
+          <div class="mono">{{ item.master_key }}</div>
+        </div>
+
+        <div class="d-flex justify-content-between py-1">
+          <div class="text-secondary">Media</div>
+          <div class="mono">{{ item.media_type.name }}</div>
+        </div>
+
+        <div class="d-flex justify-content-between py-1">
+          <div class="text-secondary">Pressing Year</div>
+          <div class="mono">{% if item.pressing_year %}{{ item.pressing_year }}{% else %}—{% endif %}</div>
+        </div>
+
+        {% if item.release_year %}
+          <div class="d-flex justify-content-between py-1">
+            <div class="text-secondary">Release Year</div>
+            <div class="mono">{{ item.release_year }}</div>
+          </div>
+        {% endif %}
+
+        {% if item.speed %}
+          <div class="d-flex justify-content-between py-1">
+            <div class="text-secondary">Speed</div>
+            <div class="mono">{{ item.speed }}</div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}
