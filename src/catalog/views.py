@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import Counter
 from typing import cast
 from urllib.parse import urlencode
+from django.utils.text import slugify
 
 from django.db.models import Q, Count, Prefetch
 from django.views.generic import ListView, DetailView, TemplateView
@@ -31,6 +32,16 @@ class DashboardView(TemplateView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
+        from django.utils.text import slugify
+
+        curated_names = ["Mike's Picks", "New Additions", "Frequently Played"]
+        curated = []
+        for name in curated_names:
+            slug = slugify(name)
+            t = Tag.objects.filter(scope=Tag.Scope.MEDIA_ITEM, slug=slug).first()
+            curated.append({"name": name, "tag": t})
+
+        ctx["curated_tags"] = curated
 
         ctx["counts"] = {
             "artists": Artist.objects.count(),

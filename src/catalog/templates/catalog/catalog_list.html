@@ -1,5 +1,5 @@
 {% extends "catalog/base.html" %}
-{% block title %}Records{% endblock %}
+{% block title %}Media Items{% endblock %}
 
 {% block nav_search %}
 <form class="d-flex" method="get" action="{% url 'catalog_public:catalog_list' %}">
@@ -10,9 +10,31 @@
 </form>
 {% endblock %}
 
+{% if active_tag %}
+  <div class="p-3 rounded-3 mb-3"
+       style="border:1px solid rgba(255,216,158,.12); background:rgba(0,0,0,.08);">
+    <div class="d-flex align-items-baseline justify-content-between gap-2 flex-wrap">
+      <div>
+        <div class="ts-brand" style="font-size:18px;">
+          🏷️ {{ active_tag.name }}
+        </div>
+        {% if active_tag.tag_note %}
+          <div class="text-secondary mt-1">{{ active_tag.tag_note }}</div>
+        {% endif %}
+      </div>
+      <div class="text-secondary">
+        <span class="mono">{{ tag_item_count }}</span> records
+        <span class="mx-2">•</span>
+        <span class="mono">{{ tag_artist_count }}</span> artists
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+
 {% block content %}
 <div class="d-flex align-items-baseline justify-content-between gap-3 flex-wrap">
-  <h1 class="h3 m-0">Records</h1>
+  <h1 class="h3 m-0">Media Items</h1>
   <div class="text-secondary">
     {% if q or media or zone %}
       Filtered results
