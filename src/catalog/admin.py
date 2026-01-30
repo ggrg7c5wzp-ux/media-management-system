@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from typing import cast
+from urllib import request
 from urllib.parse import urlencode
 
+from django.db import transaction
 from django import forms
 from django.contrib import admin, messages
 from django.db.models import Count, Q
@@ -11,7 +13,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.text import Truncator
 
-from catalog.services.binning import assign_logical_bin
+from catalog.services.binning import assign_logical_bin, rebin_scope, rebin_zone
 
 from .models import (
     Artist,
@@ -430,12 +432,52 @@ class BinMappingAdmin(admin.ModelAdmin):
 
 
 class MediaItemActionForm(admin.helpers.ActionForm):
-    tag_to_apply = forms.ModelChoiceField(queryset=Tag.objects.none(), required=False, label="Tag to apply")
+    # existing
+    tag_to_apply = forms.ModelChoiceField(
+        queryset=Tag.objects.none(),
+        required=False,
+        label="Tag to apply",
+    )
+
+    # NEW: bulk media classification controls
+    new_media_type = forms.ModelChoiceField(
+        queryset=MediaType.objects.all().order_by("name"),
+        required=False,
+        label="New media type",
+    )
+
+    new_zone_override = forms.ModelChoiceField(
+        queryset=StorageZone.objects.all().order_by("name"),
+        required=False,
+        label="New zone override",
+        help_text="Optional. If set, overrides the media type's default zone.",
+    )
+
+    clear_zone_override = forms.BooleanField(
+        required=False,
+        label="Clear zone override",
+        help_text="If checked, removes any override (item will use media type default zone).",
+    )
+
+    clear_logical_bin = forms.BooleanField(
+        required=False,
+        label="Clear placement (logical_bin)",
+        help_text="If checked, clears logical_bin for selected items before rebins so placement is recalculated cleanly.",
+    )
+
+    rebin_whole_zone = forms.BooleanField(
+        required=False,
+        label="Rebin whole zone(s)",
+        help_text="If checked, rebins entire affected zone(s) instead of per-bucket scopes (safer, fewer runs).",
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # keep your existing tag behavior
         field = cast(forms.ModelChoiceField, self.fields["tag_to_apply"])
         field.queryset = Tag.objects.filter(scope=Tag.Scope.MEDIA_ITEM).order_by("sort_order", "name")
+
 
 
 @admin.register(MediaItem)
@@ -444,7 +486,7 @@ class MediaItemAdmin(admin.ModelAdmin):
     inlines = [MediaItemTagInline]
 
     action_form = MediaItemActionForm
-    actions = ["recalculate_placement", "apply_tag_to_selected"]
+    actions = ["recalculate_placement", "apply_tag_to_selected", "bulk_change_media_type_zone"]
 
     ordering = ITEM_ORDERING
 
@@ -597,6 +639,158 @@ class MediaItemAdmin(admin.ModelAdmin):
             f"Recalculated placement for {updated} item(s). Logged {created_runs} rebin run(s).",
             level=messages.SUCCESS,
         )
+
+    @admin.action(description="Bulk change media type / zone override")
+    def bulk_change_media_type_zone(self, request, queryset):
+        """
+        Bulk-edit MediaItem.media_type and optionally zone_override (set or clear),
+        then rebin the affected scopes efficiently.
+
+        NOTE: queryset.update() bypasses signals, so we explicitly rebin scopes.
+        """
+        new_media_type_id = request.POST.get("new_media_type") or ""
+        new_zone_override_id = request.POST.get("new_zone_override") or ""
+        clear_zone_override = request.POST.get("clear_zone_override") == "on"
+        clear_logical_bin = request.POST.get("clear_logical_bin") == "on"
+        rebin_whole_zone = request.POST.get("rebin_whole_zone") == "on"
+        
+        if not new_media_type_id and not new_zone_override_id and not clear_zone_override:
+            self.message_user(
+                request,
+                "Pick a New media type and/or New zone override, or check Clear zone override.",
+                level=messages.WARNING,
+            )
+            return
+
+        # If both are provided, "clear" wins (less surprising)
+        if clear_zone_override and new_zone_override_id:
+            new_zone_override_id = ""
+
+        item_ids = list(queryset.values_list("id", flat=True))
+        if not item_ids:
+            self.message_user(request, "No items selected.", level=messages.WARNING)
+            return
+
+        # Helper: compute scope list from rows shaped like:
+        # {bucket_id, zone_override_id, media_type__default_zone_id}
+        def scopes_from_rows(rows, *, rebin_whole_zone: bool):
+            """
+            Return a set of scopes to rebin.
+            If rebin_whole_zone=True, returns (zone_id, None) only (zone-level rebins).
+            Otherwise returns bucket-aware scopes (zone_id, bucket_id).
+            """
+            scopes = set()
+            
+            zone_ids = {int(r["zone_override_id"] or r["media_type__default_zone_id"]) for r in rows}
+            zones = {
+                int(z.pk): z
+                for z in StorageZone.objects.filter(pk__in=zone_ids).only("pk", "is_binned", "sort_strategy")
+            }
+            
+            alpha_only_done = set()
+
+            for r in rows:
+                zone_id = int(r["zone_override_id"] or r["media_type__default_zone_id"])
+                bucket_id = r["bucket_id"]
+
+                zone = zones.get(zone_id)
+                if not zone or not zone.is_binned:
+                    continue
+
+                # If user asked for whole-zone rebins, we only need zone-level scopes.
+                if rebin_whole_zone:
+                    scopes.add((zone_id, None))
+                    continue
+
+                if zone.sort_strategy != StorageZone.SortStrategy.BUCKETED:
+                    if zone_id in alpha_only_done:
+                        continue
+                    alpha_only_done.add(zone_id)
+                    scopes.add((zone_id, None))
+                    continue
+                
+                scopes.add((zone_id, bucket_id))
+                if bucket_id is None:
+                    scopes.add((zone_id, None))
+
+            return scopes
+
+
+        with transaction.atomic():
+            # 1) Capture old scopes
+            old_rows = list(
+                MediaItem.objects.filter(id__in=item_ids)
+                .values("bucket_id", "zone_override_id", "media_type__default_zone_id")
+            )
+            old_scopes = scopes_from_rows(old_rows, rebin_whole_zone=rebin_whole_zone)
+
+            # 2) Apply bulk update
+            updates = {}
+
+            if new_media_type_id:
+                try:
+                    updates["media_type_id"] = int(new_media_type_id)
+                except ValueError:
+                    self.message_user(request, "Invalid media type selection.", level=messages.ERROR)
+                    return
+
+            if clear_zone_override:
+                updates["zone_override"] = None
+            elif new_zone_override_id:
+                try:
+                    updates["zone_override_id"] = int(new_zone_override_id)
+                except ValueError:
+                    self.message_user(request, "Invalid zone override selection.", level=messages.ERROR)
+                    return
+
+            updated = queryset.update(**updates)
+            
+            if clear_logical_bin:
+                MediaItem.objects.filter(id__in=item_ids).update(logical_bin=None)
+
+            # 3) Capture new scopes
+            new_rows = list(
+                MediaItem.objects.filter(id__in=item_ids)
+                .values("bucket_id", "zone_override_id", "media_type__default_zone_id")
+            )
+            new_scopes = scopes_from_rows(new_rows, rebin_whole_zone=rebin_whole_zone)
+
+            scopes_to_rebin = old_scopes | new_scopes
+            notes = f"Bulk media type/zone override change (selected={len(item_ids)}, updated={updated})"
+
+            # 4) Rebin after commit (keeps DB state consistent)
+
+            def _run_rebins():
+                # If whole-zone, we only have (zone_id, None) pairs anyway—still safe to treat explicitly.
+                zone_ids = {zone_id for (zone_id, _bucket_id) in scopes_to_rebin}
+
+                for zone_id in zone_ids:
+                    zone = StorageZone.objects.filter(pk=zone_id).first()
+                    if not zone or not zone.is_binned:
+                        continue
+
+                    if rebin_whole_zone:
+                        rebin_zone(zone=zone, record_moves=True, notes=notes)
+                        continue
+
+                    # bucket-aware mode: replay the exact scopes we computed
+                    for (zid, bucket_id) in [s for s in scopes_to_rebin if s[0] == zone_id]:
+                        if zone.sort_strategy != StorageZone.SortStrategy.BUCKETED:
+                            rebin_scope(zone=zone, bucket_id=None, record_moves=True, notes=notes)
+                        else:
+                            if bucket_id is None:
+                                rebin_zone(zone=zone, record_moves=True, notes=notes)
+                            else:
+                                rebin_scope(zone=zone, bucket_id=bucket_id, record_moves=True, notes=notes)      
+
+            transaction.on_commit(_run_rebins)
+
+        self.message_user(
+            request,
+            f"Updated {updated} item(s). Scheduled rebins for {len(scopes_to_rebin)} affected scope(s).",
+            level=messages.SUCCESS,
+        )
+
 
     @admin.action(description="Apply selected tag to selected media items")
     def apply_tag_to_selected(self, request, queryset):
