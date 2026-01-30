@@ -160,6 +160,29 @@
       .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; color: var(--ts-muted); }
       .truncate { max-width: 520px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+
+
+      /* Clickable tiles (dashboard + cards) */
+      a.ts-tile-link{ display:block; color: inherit; text-decoration:none; }
+      a.ts-tile-link:hover{ text-decoration:none; }
+      .ts-tile{
+        border: 1px solid rgba(255,216,158,.12);
+        background: rgba(0,0,0,.10);
+        border-radius: 14px;
+        transition: transform .12s ease, background .12s ease, border-color .12s ease, box-shadow .12s ease;
+      }
+      .ts-tile-lg{ padding: 16px; }
+      .ts-tile-sm{ padding: 12px; }
+      a.ts-tile-link:hover .ts-tile{
+        background: rgba(215,164,74,0.08);
+        border-color: rgba(215,164,74,0.32);
+        transform: translateY(-1px);
+        box-shadow: 0 10px 28px rgba(0,0,0,.35);
+      }
+      a.ts-tile-link:focus-visible .ts-tile{
+        outline: 2px solid rgba(231,192,106,.55);
+        outline-offset: 2px;
+      }
       /* Breadcrumb */
       .ts-breadcrumb{
         color: var(--ts-muted);
@@ -294,7 +317,7 @@
         </div>
 
         <div>
-          <a href="https://www.linkedin.com/search/results/all/?keywords=Julie%20Rapino%20M.%20Ed.%20LBS" target="_blank" rel="noopener">😈 Meet Darvina</a>
+          <a href="https://www.instagram.com/julsrap0624" target="_blank" rel="noopener">😈 Meet Darvina</a>
         </div>
       </div>
     </footer>
