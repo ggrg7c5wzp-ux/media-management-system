@@ -237,7 +237,45 @@
         box-shadow: 0 8px 20px rgba(0,0,0,.25);
       }
       .ts-muted{ color: var(--ts-muted) !important; }
-</style>
+     .ts-muted{ color: var(--ts-muted) !important; }
+
+      /* Anti-white guardrails (Bootstrap overrides) */
+      .list-group,
+      .list-group-item,
+      .card,
+      .card-body,
+      .bg-white,
+      .bg-light,
+      .text-bg-light {
+        background-color: transparent !important;
+      }
+
+      .list-group-item {
+        border-color: rgba(255,216,158,.12) !important;
+        color: var(--ts-text) !important;
+      }
+
+      .page-link {
+        background: rgba(10,7,5,0.55) !important;
+        border: 1px solid var(--ts-border) !important;
+        color: var(--ts-text) !important;
+      }
+      .page-link:hover {
+        background: rgba(215,164,74,0.12) !important;
+        border-color: rgba(215,164,74,0.35) !important;
+        color: var(--ts-text) !important;
+      }
+      .page-item.disabled .page-link {
+        background: rgba(10,7,5,0.35) !important;
+        color: rgba(255,238,209,0.38) !important;
+        border-color: rgba(255,216,158,0.10) !important;
+      }
+      .page-item.active .page-link {
+        background: rgba(215,164,74,0.14) !important;
+        border-color: rgba(215,164,74,0.45) !important;
+        color: var(--ts-text) !important;
+      }
+      </style>
   </head>
 
   <body>

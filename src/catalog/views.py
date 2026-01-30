@@ -302,7 +302,7 @@ class MediaTypeDetailView(CatalogListView):
         ctx = super().get_context_data(**kwargs)
         ctx["active_media_type"] = self.mt
         # keep filter dropdown aligned
-        ctx["media"] = str(self.mt.id)
+        ctx["media"] = str(self.mt.pk)
         return ctx
 
 
@@ -342,8 +342,8 @@ class CuratedView(TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
 
-        key = kwargs.get("key")
-        spec = self.CANDIDATES.get(key, self.CANDIDATES["cander"])
+        key = str(self.kwargs.get("slug") or "cander")
+        spec = self.CANDIDATES.get(key) or self.CANDIDATES["cander"]
 
         ctx["title"] = spec["title"]
 
