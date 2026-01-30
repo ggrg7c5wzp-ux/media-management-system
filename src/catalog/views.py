@@ -77,6 +77,9 @@ class CatalogListView(ListView):
                 "media_type__default_zone",
                 "zone_override",
                 "logical_bin",
+                "logical_bin__mapping",
+                "logical_bin__mapping__physical_bin",
+                "logical_bin__mapping__physical_bin__zone",
                 "bucket",
             )
             .order_by("artist__sort_name", "title", "pk")
@@ -197,6 +200,9 @@ class ArtistDetailView(DetailView):
                 "media_type__default_zone",
                 "zone_override",
                 "logical_bin",
+                "logical_bin__mapping",
+                "logical_bin__mapping__physical_bin",
+                "logical_bin__mapping__physical_bin__zone",
                 "bucket",
             )
             .order_by("title", "pressing_year", "pk")

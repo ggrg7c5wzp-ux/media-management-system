@@ -1,0 +1,27 @@
+{% extends "catalog/base.html" %}
+{% block title %}Genre{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-baseline justify-content-between gap-3 flex-wrap">
+  <h1 class="h3 m-0">Genre</h1>
+  <div class="ts-muted">Sort Buckets</div>
+</div>
+
+<div class="row g-2 mt-2">
+  {% for b in buckets %}
+    <div class="col-12 col-md-6 col-xl-4">
+      <a class="text-decoration-none" href="{% url 'catalog_public:genre_detail' b.id %}">
+        <div class="p-3 rounded-3" style="border:1px solid rgba(255,216,158,.10); background:rgba(0,0,0,.08);">
+          <div class="d-flex justify-content-between">
+            <div class="fw-semibold">{{ b.name }}</div>
+            <div class="mono">{{ b.item_count }}</div>
+          </div>
+          <div class="ts-muted small mt-1">{{ b.code }}</div>
+        </div>
+      </a>
+    </div>
+  {% empty %}
+    <div class="ts-muted">No genres found.</div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -199,13 +199,52 @@
         color: var(--ts-muted);
       }
       .ts-footer a { color: var(--ts-link); }
-    </style>
+    
+
+      /* Chunk 10 polish */
+      .ts-brand-center{
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 5;
+        margin: 0;
+        letter-spacing: .12em;
+        text-shadow: 0 0 12px rgba(215,164,74,.35);
+        padding: .25rem .5rem;
+        background: linear-gradient(180deg, rgba(15,11,8,.25), rgba(15,11,8,0));
+        border-radius: 999px;
+        pointer-events: auto;
+      }
+      @media (min-width: 992px){
+        .ts-brand-center{
+          position: static;
+          transform: none;
+          background: none;
+          padding: 0;
+        }
+      }
+      .ts-nav-search{ z-index: 6; }
+
+      .ts-badge{
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        padding: .35rem .55rem;
+        border-radius: 999px;
+        background: rgba(29,21,16,.9);
+        border: 1px solid var(--ts-border);
+        color: var(--ts-text);
+        box-shadow: 0 8px 20px rgba(0,0,0,.25);
+      }
+      .ts-muted{ color: var(--ts-muted) !important; }
+</style>
   </head>
 
   <body>
     <!-- Top bar -->
+    
     <nav class="navbar ts-topbar">
-      <div class="container-fluid">
+      <div class="container-fluid position-relative d-flex align-items-center">
         <div class="d-flex align-items-center gap-2">
           <!-- mobile: open sidebar -->
           <button class="btn btn-outline-secondary d-lg-none" type="button"
@@ -218,17 +257,24 @@
           <button id="tsSidebarToggle" class="btn btn-outline-secondary d-none d-lg-inline" type="button" title="Toggle sidebar">
             🪵
           </button>
-
-          <a class="navbar-brand ts-brand fw-semibold text-uppercase"
-             style="letter-spacing:.12em; text-shadow: 0 0 12px rgba(215,164,74,.35);"
-             href="{% url 'catalog_public:dashboard' %}">
-            Tuesday Saloon
-          </a>
         </div>
 
-        {% block nav_search %}{% endblock %}
+        <a class="navbar-brand ts-brand-center fw-semibold text-uppercase"
+           href="{% url 'catalog_public:dashboard' %}">
+          Tuesday Saloon
+        </a>
+
+        <div class="ms-auto ts-nav-search">
+          {% block nav_search %}
+          <form class="d-none d-sm-flex" method="get" action="{% url 'catalog_public:catalog_list' %}">
+            <input class="form-control me-2" name="q" value="{{ request.GET.q|default:'' }}" placeholder="Search title or artist…">
+            <button class="btn btn-outline-secondary" type="submit">Search</button>
+          </form>
+          {% endblock %}
+        </div>
       </div>
     </nav>
+
 
     <div class="ts-shell">
       <div class="row g-3">
@@ -317,7 +363,7 @@
         </div>
 
         <div>
-          <a href="https://www.instagram.com/julsrap0624" target="_blank" rel="noopener">😈 Meet Darvina</a>
+          <a href="https://www.linkedin.com/search/results/all/?keywords=Julie%20Rapino%20M.%20Ed.%20LBS" target="_blank" rel="noopener">😈 Meet Darvina</a>
         </div>
       </div>
     </footer>

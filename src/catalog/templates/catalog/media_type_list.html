@@ -1,0 +1,29 @@
+{% extends "catalog/base.html" %}
+{% block title %}Media Types{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-baseline justify-content-between gap-3 flex-wrap">
+  <h1 class="h3 m-0">Media Types</h1>
+  <div class="ts-muted">How the collection is physically shaped</div>
+</div>
+
+<div class="row g-2 mt-2">
+  {% for mt in media_types %}
+    <div class="col-12 col-md-6 col-xl-4">
+      <a class="text-decoration-none" href="{% url 'catalog_public:media_type_detail' mt.id %}">
+        <div class="p-3 rounded-3" style="border:1px solid rgba(255,216,158,.10); background:rgba(0,0,0,.08);">
+          <div class="d-flex justify-content-between">
+            <div class="fw-semibold">{{ mt.name }}</div>
+            <div class="mono">{{ mt.item_count }}</div>
+          </div>
+          <div class="ts-muted small mt-1">
+            Default zone: {{ mt.default_zone.name }}
+          </div>
+        </div>
+      </a>
+    </div>
+  {% empty %}
+    <div class="ts-muted">No media types found.</div>
+  {% endfor %}
+</div>
+{% endblock %}

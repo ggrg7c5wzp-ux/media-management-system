@@ -11,7 +11,7 @@
 {% block content %}
 <div class="d-flex align-items-baseline justify-content-between gap-3 flex-wrap">
   <h1 class="h3 m-0">Artists</h1>
-  <div class="text-secondary">
+  <div class="ts-muted">
     {% if q %}
       Showing results for <span class="fw-semibold">“{{ q }}”</span>
     {% elif letter %}
@@ -37,7 +37,7 @@
   <div class="mt-4 p-3 rounded-3"
        style="border:1px solid rgba(255,216,158,.12); background:rgba(0,0,0,.08);">
     <div class="ts-brand" style="font-size:20px;">Pick a letter</div>
-    <div class="text-secondary mt-1">This keeps the page fast and feels like an admin directory.</div>
+    <div class="ts-muted mt-1">This keeps the page fast and feels like an admin directory.</div>
   </div>
 {% else %}
   <div class="list-group mt-3">
@@ -50,11 +50,11 @@
         </div>
         <div class="d-flex align-items-center gap-2">
           <span class="mono">{{ a.item_count }}</span>
-          <span class="badge text-bg-light">{{ a.artist_type }}</span>
+          <span class="ts-badge">{{ a.artist_type }}</span>
         </div>
       </a>
     {% empty %}
-      <div class="text-secondary py-4">No results.</div>
+      <div class="ts-muted py-4">No results.</div>
     {% endfor %}
   </div>
 
