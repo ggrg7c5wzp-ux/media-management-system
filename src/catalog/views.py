@@ -342,7 +342,7 @@ class CuratedView(TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
 
-        key = str(self.kwargs.get("slug") or "cander")
+        key = str(self.kwargs.get("key") or "cander")
         spec = self.CANDIDATES.get(key) or self.CANDIDATES["cander"]
 
         ctx["title"] = spec["title"]

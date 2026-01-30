@@ -16,39 +16,23 @@
     </div>
 
     <div class="d-flex flex-wrap gap-2 mt-2">
-      {% if item.pressing_year or item.release_year %}
-        <span class="ts-badge">
-          Year <span class="mono">{{ item.pressing_year|default:item.release_year }}</span>
-        </span>
+      {% if item.bucket %}
+        <span class="ts-badge">Genre <span class="mono">{{ item.bucket.code }}</span></span>
       {% endif %}
       {% if item.effective_zone %}
-        <span class="ts-badge">
-          Location <span class="mono">{{ item.effective_zone.code }}</span>
-        </span>
+        <span class="ts-badge">Location <span class="mono">{{ item.effective_zone.code }}</span></span>
       {% endif %}
       {% if item.physical_bin %}
-        <span class="ts-badge">
-          Bin <span class="mono">{{ item.physical_bin.shelf_number }}-{{ item.physical_bin.bin_number }}</span>
-        </span>
+        <span class="ts-badge">Bin <span class="mono">{{ item.physical_bin.shelf_number }}-{{ item.physical_bin.bin_number }}</span></span>
       {% elif item.logical_bin %}
-        <span class="ts-badge">
-          Bin <span class="mono">{{ item.logical_bin.code }}</span>
-        </span>
+        <span class="ts-badge">Bin <span class="mono">{{ item.logical_bin.code }}</span></span>
       {% endif %}
-{% if item.pressing_year %}
-        <span class="ts-badge">
-          Year <span class="mono">{{ item.pressing_year }}</span>
-        </span>
-      {% endif %}
-</div>
+    </div>
 
     {% if item_tags %}
       <div class="d-flex flex-wrap gap-2 mt-2">
         {% for t in item_tags %}
-          <a class="ts-badge text-decoration-none"
-             style="border:1px solid rgba(255,216,158,.22); background:rgba(0,0,0,.10); color:rgba(255,216,158,.92);"
-             href="{% url 'catalog_public:tag_detail' t.pk %}">
-            🏷️ {{ t.name }}
+          <a class="ts-badge ts-tag text-decoration-none" href="{% url 'catalog_public:tag_detail' t.pk %}">🏷️ {{ t.name }}
           </a>
         {% endfor %}
       </div>
