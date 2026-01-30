@@ -1,14 +1,13 @@
 {% extends "catalog/base.html" %}
-{% block title %}Catalog{% endblock %}
+{% block title %}Dashboard{% endblock %}
 
 {% block content %}
 <div class="d-flex align-items-baseline justify-content-between gap-3 flex-wrap">
   <h1 class="h3 m-0">The Tuesday Saloon</h1>
   <div class="text-secondary">Choose your path.</div>
-  
 </div>
+
 <div class="row g-3 mt-2">
-  <!-- Row 1 -->
   <div class="col-12 col-md-6">
     <a class="text-decoration-none" href="{% url 'catalog_public:artist_list' %}">
       <div class="p-3 rounded-3" style="border:1px solid rgba(255,216,158,.14); background:rgba(0,0,0,.12);">
@@ -36,61 +35,83 @@
       </div>
     </a>
   </div>
-
-  <!-- Row 2 -->
-  <div class="col-12 col-md-6">
-    <a class="text-decoration-none" href="{% url 'catalog_public:tag_list' %}">
-      <div class="p-3 rounded-3" style="border:1px solid rgba(255,216,158,.14); background:rgba(0,0,0,.12);">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <div class="ts-brand" style="font-size:22px;">🏷️ Tags</div>
-            <div class="text-secondary">Browse curated collections</div>
-          </div>
-        </div>
-      </div>
-    </a>
-  </div>
-</div>
-
-
-<div class="mt-4">
-  <h2 class="h5 mb-2">Media Shelves</h2>
-  <div class="row g-2">
-    {% for z in zones %}
-      <div class="col-12 col-md-6 col-xl-4">
-        <div class="p-3 rounded-3" style="border:1px solid rgba(255,216,158,.10); background:rgba(0,0,0,.08);">
-          <div class="d-flex justify-content-between">
-            <div>
-              <div class="fw-semibold">{{ z.name }}</div>
-            </div>
-            <div class="mono">{{ z.item_count }}</div>
-          </div>
-        </div>
-      </div>
-    {% empty %}
-      <div class="text-secondary">No zones found.</div>
-    {% endfor %}
-  </div>
 </div>
 
 <div class="mt-4">
   <h2 class="h5 mb-2">Curated</h2>
   <div class="row g-2">
     <div class="col-12 col-md-6 col-xl-4">
-      <div class="p-3 rounded-3 text-secondary" style="border:1px dashed rgba(255,216,158,.18); background:rgba(0,0,0,.06);">
-        ⭐ Cander’s Picks (coming)
-      </div>
-    </div>
-     <div class="col-12 col-md-6 col-xl-4">
-      <div class="p-3 rounded-3 text-secondary" style="border:1px dashed rgba(255,216,158,.18); background:rgba(0,0,0,.06);">
-        ⭐ Darvina’s Picks (coming)
-      </div>
+      <a class="text-decoration-none" href="{% url 'catalog_public:curated_cander' %}">
+        <div class="p-3 rounded-3" style="border:1px solid rgba(255,216,158,.10); background:rgba(0,0,0,.08);">
+          🪓 <span class="fw-semibold">Cander’s Picks</span>
+          <div class="text-secondary mt-1 small">Artist + Media picks</div>
+        </div>
+      </a>
     </div>
     <div class="col-12 col-md-6 col-xl-4">
-      <div class="p-3 rounded-3 text-secondary" style="border:1px dashed rgba(255,216,158,.18); background:rgba(0,0,0,.06);">
-        🆕 New Additions (coming)
-      </div>
+      <a class="text-decoration-none" href="{% url 'catalog_public:curated_darvina' %}">
+        <div class="p-3 rounded-3" style="border:1px solid rgba(255,216,158,.10); background:rgba(0,0,0,.08);">
+          😈 <span class="fw-semibold">Darvina’s Picks</span>
+          <div class="text-secondary mt-1 small">Artist + Media picks</div>
+        </div>
+      </a>
     </div>
+    <div class="col-12 col-md-6 col-xl-4">
+      <a class="text-decoration-none" href="{% url 'catalog_public:curated_audiophile' %}">
+        <div class="p-3 rounded-3" style="border:1px solid rgba(255,216,158,.10); background:rgba(0,0,0,.08);">
+          🎧 <span class="fw-semibold">Audiophile</span>
+          <div class="text-secondary mt-1 small">Premium / Box / Special</div>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="mt-4">
+  <div class="d-flex justify-content-between align-items-baseline flex-wrap gap-2">
+    <h2 class="h5 mb-2">Genre</h2>
+    <a class="text-secondary small" href="{% url 'catalog_public:genre_list' %}">See all</a>
+  </div>
+
+  <div class="row g-2">
+    {% for b in buckets %}
+      <div class="col-12 col-md-6 col-xl-4">
+        <a class="text-decoration-none" href="{% url 'catalog_public:genre_detail' b.id %}">
+          <div class="p-3 rounded-3" style="border:1px solid rgba(255,216,158,.10); background:rgba(0,0,0,.08);">
+            <div class="d-flex justify-content-between">
+              <div class="fw-semibold">{{ b.name }}</div>
+              <div class="mono">{{ b.item_count }}</div>
+            </div>
+          </div>
+        </a>
+      </div>
+    {% empty %}
+      <div class="text-secondary">No genres found.</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="mt-4">
+  <div class="d-flex justify-content-between align-items-baseline flex-wrap gap-2">
+    <h2 class="h5 mb-2">Media Types</h2>
+    <a class="text-secondary small" href="{% url 'catalog_public:media_type_list' %}">See all</a>
+  </div>
+
+  <div class="row g-2">
+    {% for mt in media_types %}
+      <div class="col-12 col-md-6 col-xl-4">
+        <a class="text-decoration-none" href="{% url 'catalog_public:media_type_detail' mt.id %}">
+          <div class="p-3 rounded-3" style="border:1px solid rgba(255,216,158,.10); background:rgba(0,0,0,.08);">
+            <div class="d-flex justify-content-between">
+              <div class="fw-semibold">{{ mt.name }}</div>
+              <div class="mono">{{ mt.item_count }}</div>
+            </div>
+          </div>
+        </a>
+      </div>
+    {% empty %}
+      <div class="text-secondary">No media types found.</div>
+    {% endfor %}
   </div>
 </div>
 

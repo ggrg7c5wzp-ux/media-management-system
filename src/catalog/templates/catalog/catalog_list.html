@@ -5,8 +5,7 @@
 <form class="d-flex" method="get" action="{% url 'catalog_public:catalog_list' %}">
   <input class="form-control me-2" name="q" value="{{ q }}" placeholder="Search title or artist…">
   {% if media %}<input type="hidden" name="media" value="{{ media }}">{% endif %}
-  {% if zone %}<input type="hidden" name="zone" value="{{ zone }}">{% endif %}
-  <button class="btn btn-outline-secondary" type="submit">Search</button>
+    <button class="btn btn-outline-secondary" type="submit">Search</button>
 </form>
 {% endblock %}
 
@@ -29,6 +28,26 @@
       </div>
     </div>
   </div>
+
+{% if active_bucket %}
+  <div class="p-3 rounded-3 mb-3"
+       style="border:1px solid rgba(255,216,158,.12); background:rgba(0,0,0,.08);">
+    <div class="d-flex align-items-baseline justify-content-between gap-2 flex-wrap">
+      <div class="ts-brand" style="font-size:18px;">🎛️ {{ active_bucket.name }}</div>
+      <div class="text-secondary">Genre</div>
+    </div>
+  </div>
+{% endif %}
+
+{% if active_media_type %}
+  <div class="p-3 rounded-3 mb-3"
+       style="border:1px solid rgba(255,216,158,.12); background:rgba(0,0,0,.08);">
+    <div class="d-flex align-items-baseline justify-content-between gap-2 flex-wrap">
+      <div class="ts-brand" style="font-size:18px;">💿 {{ active_media_type.name }}</div>
+      <div class="text-secondary">Media Type</div>
+    </div>
+  </div>
+{% endif %}
 {% endif %}
 
 
@@ -36,7 +55,7 @@
 <div class="d-flex align-items-baseline justify-content-between gap-3 flex-wrap">
   <h1 class="h3 m-0">Media Items</h1>
   <div class="text-secondary">
-    {% if q or media or zone %}
+    {% if q or media %}
       Filtered results
     {% else %}
       Everything in the catalog
@@ -53,39 +72,13 @@
       <input class="form-control" name="q" value="{{ q }}" placeholder="Title or artist…">
     </div>
 
-    <div class="col-12 col-md-6 col-lg-3">
-      <label class="form-label text-secondary mb-1">Media</label>
-      <select class="form-select" name="media"
-              style="background:rgba(10,7,5,0.65); border:1px solid rgba(255,216,158,.14); color:rgba(255,238,209,.92);">
-        <option value="">All</option>
-        {% for mt in media_types %}
-          <option value="{{ mt.id }}" {% if media|stringformat:"s" == mt.id|stringformat:"s" %}selected{% endif %}>
-            {{ mt.name }}
-          </option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="col-12 col-md-6 col-lg-3">
-      <label class="form-label text-secondary mb-1">Zone</label>
-      <select class="form-select" name="zone"
-              style="background:rgba(10,7,5,0.65); border:1px solid rgba(255,216,158,.14); color:rgba(255,238,209,.92);">
-        <option value="">All</option>
-        {% for z in zones %}
-          <option value="{{ z.id }}" {% if zone|stringformat:"s" == z.id|stringformat:"s" %}selected{% endif %}>
-            {{ z.code }} — {{ z.name }}
-          </option>
-        {% endfor %}
-      </select>
-    </div>
-
     <div class="col-12 col-lg-1 d-grid">
       <button class="btn btn-outline-secondary" type="submit">Apply</button>
     </div>
 
     <div class="col-12">
       <div class="d-flex gap-2 flex-wrap mt-2">
-        {% if q or media or zone %}
+        {% if q or media %}
           <a class="btn btn-sm btn-outline-secondary" href="{% url 'catalog_public:catalog_list' %}">Clear</a>
         {% endif %}
         <span class="text-secondary">

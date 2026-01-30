@@ -57,12 +57,24 @@
         padding: 18px 16px 28px;
       }
 
+      /* Sidebar + wood grain */
       .ts-sidebar {
-        background: linear-gradient(180deg, var(--ts-panel) 0%, var(--ts-panel-2) 100%);
         border: 1px solid var(--ts-border);
         box-shadow: var(--ts-shadow);
         border-radius: 14px;
         overflow: hidden;
+
+        /* "wood grain" without assets */
+        background:
+          linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.06)),
+          repeating-linear-gradient(
+            90deg,
+            rgba(255,216,158,0.03) 0px,
+            rgba(255,216,158,0.03) 3px,
+            rgba(0,0,0,0.00) 6px,
+            rgba(0,0,0,0.00) 11px
+          ),
+          linear-gradient(180deg, #1a120d 0%, #140e0a 55%, #1b130e 100%);
       }
 
       .ts-sidebar .section-title{
@@ -72,7 +84,7 @@
         text-transform: uppercase;
         color: var(--ts-muted);
         border-top: 1px solid rgba(255,216,158,0.08);
-        background: rgba(0,0,0,0.08);
+        background: rgba(0,0,0,0.10);
       }
 
       .ts-nav a{
@@ -105,7 +117,14 @@
         min-height: 72vh;
       }
 
-      /* Tables (kept from your theme) */
+      /* Desktop collapse */
+      .ts-sidebar-col { flex: 0 0 320px; max-width: 320px; }
+      .ts-main-col { flex: 1 1 auto; max-width: 100%; }
+
+      body.sidebar-collapsed .ts-sidebar-col { display: none !important; }
+      body.sidebar-collapsed .ts-main-col { flex: 0 0 100% !important; max-width: 100% !important; }
+
+      /* Tables */
       .table {
         --bs-table-bg: transparent;
         --bs-table-color: var(--ts-text);
@@ -121,7 +140,7 @@
       }
       .table-hover tbody tr:hover { background: rgba(215,164,74,0.06); }
 
-      .form-control {
+      .form-control, .form-select {
         background: rgba(10,7,5,0.65);
         border: 1px solid var(--ts-border);
         color: var(--ts-text);
@@ -140,6 +159,15 @@
 
       .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; color: var(--ts-muted); }
       .truncate { max-width: 520px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+      /* Footer */
+      .ts-footer{
+        max-width: 1500px;
+        margin: 0 auto;
+        padding: 0 16px 20px;
+        color: var(--ts-muted);
+      }
+      .ts-footer a { color: var(--ts-link); }
     </style>
   </head>
 
@@ -153,6 +181,11 @@
                   data-bs-toggle="offcanvas" data-bs-target="#tsSidebar"
                   aria-controls="tsSidebar">
             ☰
+          </button>
+
+          <!-- desktop: collapse sidebar -->
+          <button id="tsSidebarToggle" class="btn btn-outline-secondary d-none d-lg-inline" type="button" title="Toggle sidebar">
+            🪵
           </button>
 
           <a class="navbar-brand ts-brand fw-semibold text-uppercase"
@@ -169,25 +202,27 @@
     <div class="ts-shell">
       <div class="row g-3">
         <!-- Sidebar desktop -->
-        <aside class="col-lg-3 d-none d-lg-block">
+        <aside class="col-lg-3 d-none d-lg-block ts-sidebar-col">
           <div class="ts-sidebar">
-            <div class="section-title">Browse</div>
+            <div class="section-title">Navigate</div>
             <nav class="ts-nav">
+              <a href="{% url 'catalog_public:dashboard' %}">🧭 <span>Dashboard</span></a>
               <a href="{% url 'catalog_public:artist_list' %}">🎤 <span>Artists</span></a>
-              <a href="{% url 'catalog_public:dashboard' %}">📚 <span>Media Items</span></a>
+              <a href="{% url 'catalog_public:catalog_list' %}">📚 <span>Media Items</span></a>
             </nav>
 
-            <div class="section-title">Physical World</div>
+            <div class="section-title">Browse</div>
             <nav class="ts-nav">
-              <a href="#" class="muted">📦 Storage Zones (coming)</a>
-              <a href="#" class="muted">🧱 Bins (coming)</a>
+              <a href="{% url 'catalog_public:genre_list' %}">🎛️ <span>Genre</span></a>
+              <a href="{% url 'catalog_public:media_type_list' %}">💿 <span>Media Types</span></a>
+              <a href="{% url 'catalog_public:tag_list' %}">🏷️ <span>Tags</span></a>
             </nav>
 
             <div class="section-title">Curated</div>
             <nav class="ts-nav">
-              <a href="#" class="muted">⭐ Cander’s Picks (coming)</a>
-              <a href="#" class="muted">⭐ Darvina’s Picks (coming)</a>
-              <a href="#" class="muted">🆕 New Additions (coming)</a>
+              <a href="{% url 'catalog_public:curated_cander' %}">🪓 <span>Cander’s Picks</span></a>
+              <a href="{% url 'catalog_public:curated_darvina' %}">😈 <span>Darvina’s Picks</span></a>
+              <a href="{% url 'catalog_public:curated_audiophile' %}">🎧 <span>Audiophile</span></a>
             </nav>
           </div>
         </aside>
@@ -200,30 +235,32 @@
           </div>
           <div class="offcanvas-body">
             <div class="ts-sidebar">
-              <div class="section-title">Browse</div>
+              <div class="section-title">Navigate</div>
               <nav class="ts-nav">
-                <a href="{% url 'catalog_public:dashboard' %}">📚 <span>Media Items</span></a>
+                <a href="{% url 'catalog_public:dashboard' %}">🧭 <span>Dashboard</span></a>
                 <a href="{% url 'catalog_public:artist_list' %}">🎤 <span>Artists</span></a>
+                <a href="{% url 'catalog_public:catalog_list' %}">📚 <span>Media Items</span></a>
               </nav>
 
-              <div class="section-title">Physical World</div>
+              <div class="section-title">Browse</div>
               <nav class="ts-nav">
-                <a href="#" class="muted">📦 Storage Zones (coming)</a>
-                <a href="#" class="muted">🧱 Bins (coming)</a>
+                <a href="{% url 'catalog_public:genre_list' %}">🎛️ <span>Genre</span></a>
+                <a href="{% url 'catalog_public:media_type_list' %}">💿 <span>Media Types</span></a>
+                <a href="{% url 'catalog_public:tag_list' %}">🏷️ <span>Tags</span></a>
               </nav>
 
               <div class="section-title">Curated</div>
               <nav class="ts-nav">
-                <a href="#" class="muted">⭐ Mike’s Picks (coming)</a>
-                <a href="#" class="muted">🆕 New Additions (coming)</a>
-                <a href="#" class="muted">🏷️ Tags (coming)</a>
+                <a href="{% url 'catalog_public:curated_cander' %}">🪓 <span>Cander’s Picks</span></a>
+                <a href="{% url 'catalog_public:curated_darvina' %}">😈 <span>Darvina’s Picks</span></a>
+                <a href="{% url 'catalog_public:curated_audiophile' %}">🎧 <span>Audiophile</span></a>
               </nav>
             </div>
           </div>
         </div>
 
         <!-- Main content -->
-        <section class="col-lg-9">
+        <section class="col-lg-9 ts-main-col">
           <div class="ts-content">
             {% block content %}{% endblock %}
           </div>
@@ -231,19 +268,45 @@
       </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <footer class="ts-footer">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-2"
+           style="border-top:1px solid rgba(255,216,158,0.10);">
+        <div>
+          <a href="https://www.linkedin.com/search/results/all/?keywords=Michael%20Rapino%20CISM%20CDPSE" target="_blank" rel="noopener">🪓 Meet Cander</a>
+        </div>
 
+        <div class="text-center flex-grow-1">
+          © {% now "Y" %} Tuesday Saloon
+        </div>
+
+        <div>
+          <a href="https://www.linkedin.com/search/results/all/?keywords=Julie%20Rapino%20M.%20Ed.%20LBS" target="_blank" rel="noopener">😈 Meet Darvina</a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Bootstrap JS (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-      // Mark active link (simple client-side helper)
+      // Desktop sidebar collapse, persisted
       (function(){
-        const path = window.location.pathname;
-        document.querySelectorAll(".ts-nav a[href]").forEach(a => {
-          const href = a.getAttribute("href");
-          if (!href || href === "#") return;
-          if (path === href || (href.length > 1 && path.startsWith(href))) {
-            a.classList.add("active");
-          }
-        });
+        const key = "ts_sidebar_collapsed_v1";
+        const apply = (collapsed) => {
+          document.body.classList.toggle("sidebar-collapsed", collapsed);
+        };
+        try {
+          const saved = localStorage.getItem(key);
+          if (saved === "1") apply(true);
+        } catch (e) {}
+
+        const btn = document.getElementById("tsSidebarToggle");
+        if (btn){
+          btn.addEventListener("click", () => {
+            const collapsed = !document.body.classList.contains("sidebar-collapsed");
+            apply(collapsed);
+            try { localStorage.setItem(key, collapsed ? "1" : "0"); } catch (e) {}
+          });
+        }
       })();
     </script>
   </body>

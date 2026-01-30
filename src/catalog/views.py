@@ -10,7 +10,7 @@ from django.utils.text import slugify
 from django.db.models import Q, Count, Prefetch
 from django.views.generic import ListView, DetailView, TemplateView
 
-from .models import Artist, MediaItem, StorageZone, MediaType, Tag
+from .models import Artist, MediaItem, StorageZone, MediaType, SortBucket, Tag
 
 
 # -----------------------------------------------------------------------------
@@ -32,43 +32,31 @@ class DashboardView(TemplateView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        from django.utils.text import slugify
-
-        curated_names = ["Mike's Picks", "New Additions", "Frequently Played"]
-        curated = []
-        for name in curated_names:
-            slug = slugify(name)
-            t = Tag.objects.filter(scope=Tag.Scope.MEDIA_ITEM, slug=slug).first()
-            curated.append({"name": name, "tag": t})
-
-        ctx["curated_tags"] = curated
 
         ctx["counts"] = {
             "artists": Artist.objects.count(),
             "items": MediaItem.objects.count(),
-            "zones": StorageZone.objects.count(),
         }
 
-        zones = list(StorageZone.objects.all().order_by("code"))
-
-        items = (
-            MediaItem.objects
-            .select_related("media_type", "media_type__default_zone", "zone_override")
-            .only("id", "media_type_id", "zone_override_id")
+        # Genre (Sort Buckets)
+        ctx["buckets"] = (
+            SortBucket.objects.filter(is_active=True)
+            .annotate(item_count=Count("media_items", distinct=True))
+            .order_by("sort_order", "name")
         )
 
-        counter = Counter()
-        for it in items:
-            z = it.effective_zone
-            if z:
-                counter[z.code] += 1
+        # Media Types
+        ctx["media_types"] = (
+            MediaType.objects.all()
+            .annotate(item_count=Count("media_items", distinct=True))
+            .order_by("name")
+        )
 
-        ctx["zones"] = [
-            {"code": z.code, "name": z.name, "item_count": counter.get(z.code, 0)}
-            for z in zones
-        ]
         return ctx
 
+
+# -----------------------------------------------------------------------------
+# Catalog list (Records table)
 
 # -----------------------------------------------------------------------------
 # Catalog list (Records table)
@@ -243,6 +231,144 @@ class ArtistDetailView(DetailView):
 
         return ctx
 
+
+
+
+# -----------------------------------------------------------------------------
+# Genre (Sort Buckets) and Media Types
+# -----------------------------------------------------------------------------
+
+class GenreListView(TemplateView):
+    template_name = "catalog/genre_list.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["buckets"] = (
+            SortBucket.objects.filter(is_active=True)
+            .annotate(item_count=Count("media_items", distinct=True))
+            .order_by("sort_order", "name")
+        )
+        return ctx
+
+
+class GenreDetailView(CatalogListView):
+    """Reuse the catalog table UI scoped to a SortBucket."""
+
+    def dispatch(self, request, *args, **kwargs):
+        self.bucket = SortBucket.objects.get(pk=kwargs["pk"])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(bucket=self.bucket)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["active_bucket"] = self.bucket
+        return ctx
+
+
+class MediaTypeListView(TemplateView):
+    template_name = "catalog/media_type_list.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["media_types"] = (
+            MediaType.objects.all()
+            .annotate(item_count=Count("media_items", distinct=True))
+            .order_by("name")
+        )
+        return ctx
+
+
+class MediaTypeDetailView(CatalogListView):
+    """Reuse the catalog table UI scoped to a MediaType."""
+
+    def dispatch(self, request, *args, **kwargs):
+        self.mt = MediaType.objects.get(pk=kwargs["pk"])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(media_type=self.mt)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["active_media_type"] = self.mt
+        # keep filter dropdown aligned
+        ctx["media"] = str(self.mt.id)
+        return ctx
+
+
+# -----------------------------------------------------------------------------
+# Curated
+# -----------------------------------------------------------------------------
+
+class CuratedView(TemplateView):
+    template_name = "catalog/curated.html"
+
+    # url kwarg: key in {"cander","darvina","audiophile"}
+    CANDIDATES = {
+        "cander": {
+            "title": "Cander’s Picks",
+            "artist_slugs": ["canders-picks", "cander-picks", "mikes-picks", "mike-s-picks"],
+            "media_slugs": ["canders-picks", "cander-picks", "mikes-picks", "mike-s-picks"],
+        },
+        "darvina": {
+            "title": "Darvina’s Picks",
+            "artist_slugs": ["darvinas-picks", "darvina-picks", "julies-picks", "julie-s-picks"],
+            "media_slugs": ["darvinas-picks", "darvina-picks", "julies-picks", "julie-s-picks"],
+        },
+        "audiophile": {
+            "title": "Audiophile Curated",
+            "artist_slugs": [],
+            "media_slugs": ["premium", "box", "box-set", "special"],
+        },
+    }
+
+    def _first_tag(self, scope: str, slugs: list[str]) -> Tag | None:
+        for s in slugs:
+            t = Tag.objects.filter(scope=scope, slug=s).first()
+            if t:
+                return t
+        return None
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+
+        key = kwargs.get("key")
+        spec = self.CANDIDATES.get(key, self.CANDIDATES["cander"])
+
+        ctx["title"] = spec["title"]
+
+        artist_tag = self._first_tag(Tag.Scope.ARTIST, spec["artist_slugs"])
+        media_tag = self._first_tag(Tag.Scope.MEDIA_ITEM, spec["media_slugs"])
+
+        ctx["artist_tag"] = artist_tag
+        ctx["media_tag"] = media_tag
+
+        if artist_tag:
+            ctx["artists"] = (
+                Artist.objects.filter(tags=artist_tag)
+                .annotate(item_count=Count("media_items", distinct=True))
+                .order_by("sort_name", "display_name")
+            )
+        else:
+            ctx["artists"] = Artist.objects.none()
+
+        media_qs = (
+            MediaItem.objects.select_related("artist", "media_type")
+            .order_by("artist__sort_name", "title", "pk")
+        )
+
+        if media_tag:
+            media_qs = media_qs.filter(tags=media_tag).distinct()
+        elif key == "audiophile":
+            # If no tag match, keep empty rather than lying.
+            media_qs = MediaItem.objects.none()
+
+        ctx["items"] = media_qs
+        return ctx
 
 # -----------------------------------------------------------------------------
 # Tags
