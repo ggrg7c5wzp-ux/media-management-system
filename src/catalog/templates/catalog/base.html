@@ -160,6 +160,14 @@
       .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; color: var(--ts-muted); }
       .truncate { max-width: 520px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+      /* Breadcrumb */
+      .ts-breadcrumb{
+        color: var(--ts-muted);
+        font-size: 13px;
+        margin-bottom: 10px;
+      }
+      .ts-breadcrumb a{ color: var(--ts-link); }
+
       /* Footer */
       .ts-footer{
         max-width: 1500px;
@@ -204,28 +212,30 @@
         <!-- Sidebar desktop -->
         <aside class="col-lg-3 d-none d-lg-block ts-sidebar-col">
           <div class="ts-sidebar">
+            {% with p=request.path %}
             <div class="section-title">Navigate</div>
             <nav class="ts-nav">
-              <a href="{% url 'catalog_public:dashboard' %}">🧭 <span>Dashboard</span></a>
-              <a href="{% url 'catalog_public:artist_list' %}">🎤 <span>Artists</span></a>
-              <a href="{% url 'catalog_public:catalog_list' %}">📚 <span>Media Items</span></a>
+              <a class="{% if p|slice:':11' == '/dashboard/' or p == '/dashboard' %}active{% endif %}" href="{% url 'catalog_public:dashboard' %}">🧭 <span>Dashboard</span></a>
+              <a class="{% if p|slice:':9' == '/artists/' or p == '/artists' %}active{% endif %}" href="{% url 'catalog_public:artist_list' %}">🎤 <span>Artists</span></a>
+              <a class="{% if p|slice:':8' == '/catalog/' or p == '/catalog' or p|slice:':7' == '/items/' %}active{% endif %}" href="{% url 'catalog_public:catalog_list' %}">📚 <span>Media Items</span></a>
             </nav>
 
             <div class="section-title">Browse</div>
             <nav class="ts-nav">
-              <a href="{% url 'catalog_public:genre_list' %}">🎛️ <span>Genre</span></a>
-              <a href="{% url 'catalog_public:media_type_list' %}">💿 <span>Media Types</span></a>
-              <a href="{% url 'catalog_public:tag_list' %}">🏷️ <span>Tags</span></a>
+              <a class="{% if p|slice:':8' == '/genres/' or p == '/genres' %}active{% endif %}" href="{% url 'catalog_public:genre_list' %}">🎛️ <span>Genre</span></a>
+              <a class="{% if p|slice:':12' == '/media-types/' or p == '/media-types' %}active{% endif %}" href="{% url 'catalog_public:media_type_list' %}">💿 <span>Media Types</span></a>
+              <a class="{% if p|slice:':6' == '/tags/' or p == '/tags' %}active{% endif %}" href="{% url 'catalog_public:tag_list' %}">🏷️ <span>Tags</span></a>
             </nav>
 
             <div class="section-title">Curated</div>
             <nav class="ts-nav">
-              <a href="{% url 'catalog_public:curated_cander' %}">🪓 <span>Cander’s Picks</span></a>
-              <a href="{% url 'catalog_public:curated_darvina' %}">😈 <span>Darvina’s Picks</span></a>
-              <a href="{% url 'catalog_public:curated_audiophile' %}">🎧 <span>Audiophile</span></a>
+              <a class="{% if p|slice:':16' == '/curated/cander/' or p == '/curated/cander' %}active{% endif %}" href="{% url 'catalog_public:curated_cander' %}">🪓 <span>Cander’s Picks</span></a>
+              <a class="{% if p|slice:':17' == '/curated/darvina/' or p == '/curated/darvina' %}active{% endif %}" href="{% url 'catalog_public:curated_darvina' %}">😈 <span>Darvina’s Picks</span></a>
+              <a class="{% if p|slice:':20' == '/curated/audiophile/' or p == '/curated/audiophile' %}active{% endif %}" href="{% url 'catalog_public:curated_audiophile' %}">🎧 <span>Audiophile</span></a>
             </nav>
           </div>
-        </aside>
+
+            {% endwith %}        </aside>
 
         <!-- Sidebar mobile (offcanvas) -->
         <div class="offcanvas offcanvas-start d-lg-none" tabindex="-1" id="tsSidebar">
@@ -235,33 +245,37 @@
           </div>
           <div class="offcanvas-body">
             <div class="ts-sidebar">
+              {% with p=request.path %}
               <div class="section-title">Navigate</div>
               <nav class="ts-nav">
-                <a href="{% url 'catalog_public:dashboard' %}">🧭 <span>Dashboard</span></a>
-                <a href="{% url 'catalog_public:artist_list' %}">🎤 <span>Artists</span></a>
-                <a href="{% url 'catalog_public:catalog_list' %}">📚 <span>Media Items</span></a>
+                <a class="{% if p|slice:':11' == '/dashboard/' or p == '/dashboard' %}active{% endif %}" href="{% url 'catalog_public:dashboard' %}">🧭 <span>Dashboard</span></a>
+                <a class="{% if p|slice:':9' == '/artists/' or p == '/artists' %}active{% endif %}" href="{% url 'catalog_public:artist_list' %}">🎤 <span>Artists</span></a>
+                <a class="{% if p|slice:':8' == '/catalog/' or p == '/catalog' or p|slice:':7' == '/items/' %}active{% endif %}" href="{% url 'catalog_public:catalog_list' %}">📚 <span>Media Items</span></a>
               </nav>
 
               <div class="section-title">Browse</div>
               <nav class="ts-nav">
-                <a href="{% url 'catalog_public:genre_list' %}">🎛️ <span>Genre</span></a>
-                <a href="{% url 'catalog_public:media_type_list' %}">💿 <span>Media Types</span></a>
-                <a href="{% url 'catalog_public:tag_list' %}">🏷️ <span>Tags</span></a>
+                <a class="{% if p|slice:':8' == '/genres/' or p == '/genres' %}active{% endif %}" href="{% url 'catalog_public:genre_list' %}">🎛️ <span>Genre</span></a>
+                <a class="{% if p|slice:':12' == '/media-types/' or p == '/media-types' %}active{% endif %}" href="{% url 'catalog_public:media_type_list' %}">💿 <span>Media Types</span></a>
+                <a class="{% if p|slice:':6' == '/tags/' or p == '/tags' %}active{% endif %}" href="{% url 'catalog_public:tag_list' %}">🏷️ <span>Tags</span></a>
               </nav>
 
               <div class="section-title">Curated</div>
               <nav class="ts-nav">
-                <a href="{% url 'catalog_public:curated_cander' %}">🪓 <span>Cander’s Picks</span></a>
-                <a href="{% url 'catalog_public:curated_darvina' %}">😈 <span>Darvina’s Picks</span></a>
-                <a href="{% url 'catalog_public:curated_audiophile' %}">🎧 <span>Audiophile</span></a>
+                <a class="{% if p|slice:':16' == '/curated/cander/' or p == '/curated/cander' %}active{% endif %}" href="{% url 'catalog_public:curated_cander' %}">🪓 <span>Cander’s Picks</span></a>
+                <a class="{% if p|slice:':17' == '/curated/darvina/' or p == '/curated/darvina' %}active{% endif %}" href="{% url 'catalog_public:curated_darvina' %}">😈 <span>Darvina’s Picks</span></a>
+                <a class="{% if p|slice:':20' == '/curated/audiophile/' or p == '/curated/audiophile' %}active{% endif %}" href="{% url 'catalog_public:curated_audiophile' %}">🎧 <span>Audiophile</span></a>
               </nav>
             </div>
           </div>
         </div>
 
+
+              {% endwith %}
         <!-- Main content -->
         <section class="col-lg-9 ts-main-col">
           <div class="ts-content">
+            {% block breadcrumb %}{% endblock %}
             {% block content %}{% endblock %}
           </div>
         </section>
