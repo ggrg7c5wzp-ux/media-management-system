@@ -44,43 +44,6 @@
 
 <hr style="border-color: rgba(255,216,158,.14);">
 
-
-<div class="row g-3">
-  <div class="col-12 col-lg-6">
-    <div class="p-3 rounded-3" style="border:1px solid rgba(255,216,158,.12); background:rgba(0,0,0,.08);">
-      <div class="ts-brand" style="font-size:18px;">By Media</div>
-      <div class="mt-2 d-flex flex-wrap gap-2">
-        {% for row in by_media_type %}
-          <span class="badge text-bg-light">
-            {{ row.media_type__name }} <span class="mono ms-1">{{ row.c }}</span>
-          </span>
-        {% empty %}
-          <span class="text-secondary">No media breakdown.</span>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
-
-  <div class="col-12 col-lg-6">
-    <div class="p-3 rounded-3" style="border:1px solid rgba(255,216,158,.12); background:rgba(0,0,0,.08);">
-      <div class="ts-brand" style="font-size:18px;">Where It Lives</div>
-      <div class="mt-2">
-        {% for row in by_zone %}
-          <div class="d-flex justify-content-between align-items-center py-1">
-            <div>
-              <div class="fw-semibold">{{ row.name }}</div>
-              <div class="mono">{{ row.code }}</div>
-            </div>
-            <div class="mono">{{ row.c }}</div>
-          </div>
-        {% empty %}
-          <span class="text-secondary">No zone breakdown.</span>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
-</div>
-
 <div class="mt-4">
   <div class="d-flex align-items-baseline justify-content-between gap-2 flex-wrap">
     <h2 class="h5 m-0">Media Items</h2>
@@ -91,10 +54,10 @@
     <table class="table table-hover align-middle">
       <thead>
         <tr>
-          <th style="width:42%;">Title</th>
-          <th style="width:16%;">Media</th>
-          <th style="width:10%;">Year</th>
-          <th>Location</th>
+          <th style="width:46%;">Title</th>
+          <th style="width:18%;">Media</th>
+          <th style="width:18%;">Location</th>
+          <th style="width:8%;">Bin</th>
         </tr>
       </thead>
       <tbody>
@@ -103,15 +66,14 @@
             <td class="truncate">
               <a href="{% url 'catalog_public:item_detail' i.pk %}">{{ i.title }}</a>
             </td>
-            <td>{{ i.media_type.name }}</td>
-            <td class="mono">{{ i.pressing_year }}</td>
+            <td>
+              {{ i.media_type.name }}{% if i.pressing_year %}<span class="mono"> • {{ i.pressing_year }}</span>{% endif %}
+            </td>
+            <td>
+              {% if i.effective_zone %}{{ i.display_zone_name }}{% else %}—{% endif %}
+            </td>
             <td class="mono">
-              {% if i.effective_zone %}
-                {{ i.effective_zone.code }}
-              {% else %}
-                —
-              {% endif %}
-              {% if i.location_path %}<br>{{ i.location_path }}{% endif %}
+              {% if i.display_bin_number %}{{ i.display_bin_number }}{% else %}—{% endif %}
             </td>
           </tr>
         {% empty %}

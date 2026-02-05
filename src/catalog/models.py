@@ -487,6 +487,27 @@ class MediaItem(models.Model):
         mapping = getattr(self.logical_bin, "mapping", None)
         return mapping.physical_bin if mapping and mapping.is_active else None
 
+    @property
+    def physical_bin_number(self) -> int | None:
+        """A friendly 1..N label bin number within the effective zone."""
+        pb = self.physical_bin
+        return int(pb.linear_bin_number) if pb else None
+
+    @property
+    def display_zone_name(self) -> str:
+        """Human-friendly zone label for the public UI."""
+        z = self.effective_zone
+        return getattr(z, "name", None) or getattr(z, "code", "")
+
+    @property
+    def display_bin_number(self) -> int | None:
+        """Prefer the physical label bin number; fall back to logical bin number."""
+        if self.physical_bin_number is not None:
+            return self.physical_bin_number
+        if self.logical_bin_id:
+            return int(self.logical_bin.number)
+        return None
+
     def __str__(self) -> str:
         return self.title
 

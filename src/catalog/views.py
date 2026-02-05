@@ -215,22 +215,6 @@ class ArtistDetailView(DetailView):
         ctx["items"] = items_qs
         ctx["item_count"] = items_qs.count()
 
-        ctx["by_media_type"] = (
-            items_qs.values("media_type__name")
-            .annotate(c=Count("id"))
-            .order_by("-c", "media_type__name")
-        )
-
-        zone_counter = Counter()
-        for it in items_qs:
-            z = it.effective_zone
-            zone_counter[(z.code, z.name)] += 1
-
-        ctx["by_zone"] = [
-            {"code": code, "name": name, "c": count}
-            for (code, name), count in zone_counter.most_common()
-        ]
-
         years = [y for y in items_qs.values_list("pressing_year", flat=True) if y]
         ctx["year_min"] = min(years) if years else None
         ctx["year_max"] = max(years) if years else None
@@ -328,7 +312,8 @@ class CuratedView(TemplateView):
         "audiophile": {
             "title": "Audiophile Curated",
             "artist_slugs": [],
-            "media_slugs": ["premium", "box", "box-set", "special"],
+            # handled specially (3 lists)
+            "media_slugs": ["premium", "special", "box-set"],
         },
     }
 
@@ -346,6 +331,36 @@ class CuratedView(TemplateView):
         spec = self.CANDIDATES.get(key) or self.CANDIDATES["cander"]
 
         ctx["title"] = spec["title"]
+
+        # Special case: audiophile is three separate lists (Premium / Special / Box Set)
+        if key == "audiophile":
+            wanted = [
+                ("Premium", ["premium", "premium-pressings", "audiophile"]),
+                ("Special", ["special"]),
+                ("Box Set", ["box-set", "box", "boxsets", "box-sets"]),
+            ]
+
+            def first_media_tag(slugs: list[str]) -> Tag | None:
+                return self._first_tag(Tag.Scope.MEDIA_ITEM, slugs)
+
+            audiophile_lists = []
+            for label, slugs in wanted:
+                t = first_media_tag(slugs)
+                qs = (
+                    MediaItem.objects.select_related("artist", "media_type")
+                    .order_by("artist__sort_name", "title", "pk")
+                )
+                if t:
+                    qs = qs.filter(tags=t).distinct()
+                else:
+                    qs = MediaItem.objects.none()
+
+                audiophile_lists.append({"label": label, "tag": t, "items": qs})
+
+            ctx["audiophile_lists"] = audiophile_lists
+            ctx["artists"] = Artist.objects.none()
+            ctx["items"] = MediaItem.objects.none()
+            return ctx
 
         artist_tag = self._first_tag(Tag.Scope.ARTIST, spec["artist_slugs"])
         media_tag = self._first_tag(Tag.Scope.MEDIA_ITEM, spec["media_slugs"])
