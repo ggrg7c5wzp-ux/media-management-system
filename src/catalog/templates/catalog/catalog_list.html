@@ -94,10 +94,12 @@
   <table class="table table-hover align-middle">
     <thead>
       <tr>
-        <th style="width:30%;">Artist</th>
-        <th style="width:36%;">Title</th>
+        <th style="width:22%;">Artist</th>
+        <th style="width:30%;">Title</th>
         <th style="width:14%;">Genre</th>
-        <th style="width:14%;">Location</th>
+        <th style="width:8%;">Release</th>
+        <th style="width:8%;">Pressing</th>
+        <th style="width:10%;">Location</th>
         <th style="width:8%;">Bin</th>
       </tr>
     </thead>
@@ -110,33 +112,38 @@
 
           <td class="truncate">
             <a href="{% url 'catalog_public:item_detail' i.pk %}">{{ i.title }}</a>
-            <div class="mono ts-muted">
-              {{ i.media_type.name }}{% if i.pressing_year %} • {{ i.pressing_year }}{% endif %}
-            </div>
+</td>
+          <td class="truncate">
+            {% if i.bucket %}{{ i.bucket.name }}{% else %}<span class="text-secondary">—</span>{% endif %}
+          </td>
+          <td class="mono">
+            {% if i.release_year %}{{ i.release_year }}{% else %}<span class="text-secondary">—</span>{% endif %}
+          </td>
+          <td class="mono">
+            {% if i.pressing_year %}{{ i.pressing_year }}{% else %}<span class="text-secondary">—</span>{% endif %}
           </td>
 
-          <td>
-            {% if i.bucket %}{{ i.bucket.name }}{% else %}—{% endif %}
-          </td>
 
-          <td>
+          <td class="mono">
             {% if i.effective_zone %}
-              {{ i.display_zone_name }}
+              {{ i.effective_zone.code }}
             {% else %}
               —
             {% endif %}
           </td>
 
           <td class="mono">
-            {% if i.display_bin_number %}
-              {{ i.display_bin_number }}
+            {% if i.physical_bin %}
+              {{ i.physical_bin.shelf_number }}-{{ i.physical_bin.bin_number }}
+            {% elif i.logical_bin %}
+              {{ i.logical_bin.code }}
             {% else %}
               —
             {% endif %}
           </td>
         </tr>
       {% empty %}
-        <tr><td colspan="5" class="text-secondary py-4">No records found.</td></tr>
+        <tr><td colspan="4" class="text-secondary py-4">No records found.</td></tr>
       {% endfor %}
     </tbody>
   </table>

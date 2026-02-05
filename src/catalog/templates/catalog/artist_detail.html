@@ -8,9 +8,8 @@
     <h1 class="h3 m-0">{{ artist.display_name }}</h1>
 
     <div class="text-secondary mt-1">
-      <span class="mono">{{ artist.sort_name }}</span>
       {% if artist.artist_type %}
-        <span class="ms-2 badge text-bg-light">{{ artist.artist_type }}</span>
+        <span class="ms-2 badge ts-tag">{{ artist.artist_type }}</span>
       {% endif %}
     </div>
 
