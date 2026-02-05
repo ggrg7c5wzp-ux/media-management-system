@@ -5,10 +5,13 @@
 <form class="d-flex" method="get" action="{% url 'catalog_public:catalog_list' %}">
   <input class="form-control me-2" name="q" value="{{ q }}" placeholder="Search title or artist…">
   {% if media %}<input type="hidden" name="media" value="{{ media }}">{% endif %}
-    <button class="btn btn-outline-secondary" type="submit">Search</button>
+  <button class="btn btn-outline-secondary" type="submit">Search</button>
 </form>
 {% endblock %}
 
+{% block content %}
+
+{# --- Optional banners / context blocks (must live inside block content) --- #}
 {% if active_tag %}
   <div class="p-3 rounded-3 mb-3"
        style="border:1px solid rgba(255,216,158,.12); background:rgba(0,0,0,.08);">
@@ -28,6 +31,7 @@
       </div>
     </div>
   </div>
+{% endif %}
 
 {% if active_bucket %}
   <div class="p-3 rounded-3 mb-3"
@@ -48,10 +52,8 @@
     </div>
   </div>
 {% endif %}
-{% endif %}
 
 
-{% block content %}
 <div class="d-flex align-items-baseline justify-content-between gap-3 flex-wrap">
   <h1 class="h3 m-0">Media Items</h1>
   <div class="text-secondary">
@@ -70,6 +72,8 @@
     <div class="col-12 col-lg-5">
       <label class="form-label text-secondary mb-1">Search</label>
       <input class="form-control" name="q" value="{{ q }}" placeholder="Title or artist…">
+      {% if media %}<input type="hidden" name="media" value="{{ media }}">{% endif %}
+      {% if zone %}<input type="hidden" name="zone" value="{{ zone }}">{% endif %}
     </div>
 
     <div class="col-12 col-lg-1 d-grid">
@@ -78,7 +82,7 @@
 
     <div class="col-12">
       <div class="d-flex gap-2 flex-wrap mt-2">
-        {% if q or media %}
+        {% if q or media or zone %}
           <a class="btn btn-sm btn-outline-secondary" href="{% url 'catalog_public:catalog_list' %}">Clear</a>
         {% endif %}
         <span class="text-secondary">
@@ -112,38 +116,38 @@
 
           <td class="truncate">
             <a href="{% url 'catalog_public:item_detail' i.pk %}">{{ i.title }}</a>
-</td>
+          </td>
+
           <td class="truncate">
             {% if i.bucket %}{{ i.bucket.name }}{% else %}<span class="text-secondary">—</span>{% endif %}
           </td>
+
           <td class="mono">
             {% if i.release_year %}{{ i.release_year }}{% else %}<span class="text-secondary">—</span>{% endif %}
           </td>
+
           <td class="mono">
             {% if i.pressing_year %}{{ i.pressing_year }}{% else %}<span class="text-secondary">—</span>{% endif %}
           </td>
 
-
           <td class="mono">
             {% if i.effective_zone %}
-              {{ i.effective_zone.code }}
+              {{ i.effective_zone.name }}
             {% else %}
               —
             {% endif %}
           </td>
 
           <td class="mono">
-            {% if i.physical_bin %}
-              {{ i.physical_bin.shelf_number }}-{{ i.physical_bin.bin_number }}
-            {% elif i.logical_bin %}
-              {{ i.logical_bin.code }}
+            {% if i.physical_bin or i.logical_bin %}
+              {{ i.display_bin_number }}
             {% else %}
               —
             {% endif %}
           </td>
         </tr>
       {% empty %}
-        <tr><td colspan="4" class="text-secondary py-4">No records found.</td></tr>
+        <tr><td colspan="7" class="text-secondary py-4">No records found.</td></tr>
       {% endfor %}
     </tbody>
   </table>
@@ -183,4 +187,5 @@
   </ul>
 </nav>
 {% endif %}
+
 {% endblock %}
