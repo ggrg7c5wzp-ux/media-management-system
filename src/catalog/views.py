@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections import Counter
 from typing import cast
 from urllib.parse import urlencode
-from django.utils.text import slugify
 
 from django.db.models import Q, Count, Prefetch
 from django.views.generic import ListView, DetailView, TemplateView
