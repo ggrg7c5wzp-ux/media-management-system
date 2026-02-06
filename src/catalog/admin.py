@@ -609,36 +609,40 @@ class MediaItemAdmin(admin.ModelAdmin):
         pb = getattr(obj, "physical_bin", None)
         return pb.linear_bin_number if pb else ""
 
+    from catalog.models import StorageZone
+    from catalog.services.binning import rebin_scope
+
     @admin.action(description="Recalculate placement (logical_bin)")
     def recalculate_placement(self, request, queryset):
         qs = queryset.select_related("artist", "media_type", "zone_override", "bucket")
-        updated = 0
+
         scopes: set[tuple[int, int | None]] = set()
 
+        # Determine smallest correct universes to rebin
         for item in qs:
             zone = item.effective_zone
-            if zone:
-                if zone.sort_strategy == StorageZone.SortStrategy.BUCKETED:
-                    scopes.add((zone.id, item.bucket_id))
-                else:
-                    scopes.add((zone.id, None))
+            if not zone:
+                continue
 
-            result = assign_logical_bin(item, persist=True)
-            if getattr(result, "logical_bin", None):
-                updated += 1
+            if zone.sort_strategy == StorageZone.SortStrategy.BUCKETED:
+                scopes.add((zone.id, item.bucket_id))
+            else:
+                scopes.add((zone.id, None))
 
-        notes = f"Manual admin placement recalculation (selected={qs.count()}, updated={updated})"
+        notes = f"Manual admin rebin via scopes (selected={qs.count()}, scopes={len(scopes)})"
 
-        created_runs = 0
+        # Bulk rebin per scope (fast, deterministic, avoids per-row updates)
         for zone_id, bucket_id in scopes:
-            RebinRun.objects.create(zone_id=zone_id, bucket_id=bucket_id, notes=notes)
-            created_runs += 1
+            zone = StorageZone.objects.get(pk=zone_id)
+            rebin_scope(zone=zone, bucket_id=bucket_id, record_moves=False, notes=notes)
 
         self.message_user(
             request,
-            f"Recalculated placement for {updated} item(s). Logged {created_runs} rebin run(s).",
+            f"Rebinned {len(scopes)} scope(s) (bulk update).",
             level=messages.SUCCESS,
         )
+
+    
 
     @admin.action(description="Bulk change media type / zone override")
     def bulk_change_media_type_zone(self, request, queryset):
