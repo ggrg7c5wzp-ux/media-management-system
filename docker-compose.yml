@@ -17,13 +17,13 @@ services:
 
   db:
     # Use a stable Postgres major version (matches what Render typically offers).
-    image: postgres:16
+    image: postgres:18
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
 
 volumes:
   postgres_data:
