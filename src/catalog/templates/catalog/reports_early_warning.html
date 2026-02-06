@@ -1,0 +1,76 @@
+{% extends "catalog/base.html" %}
+{% block title %}Early Warning{% endblock %}
+
+{% block content %}
+<div class="page-title">Early Warning</div>
+
+<form method="get" class="report-controls">
+  <label for="zone">Zone</label>
+  <select id="zone" name="zone">
+    {% for z in zones %}
+      <option value="{{ z.code }}" {% if zone and z.code == zone.code %}selected{% endif %}>
+        {{ z.code }} — {{ z.name }}
+      </option>
+    {% endfor %}
+  </select>
+  <button type="submit">Run</button>
+</form>
+
+{% if not zone %}
+  <div class="report-note">Unknown zone.</div>
+{% else %}
+  <div class="report-table-wrap">
+    <table class="report-table">
+      <thead>
+        <tr>
+          <th>Bucket</th>
+          <th>Range</th>
+          <th>Last Logical Bin</th>
+          <th style="text-align:right;">Used</th>
+          <th style="text-align:right;">Capacity</th>
+          <th style="text-align:right;">Remaining</th>
+          <th>Next Bin</th>
+          <th>Next Bin Collision?</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+          <tr>
+            <td>{{ r.bucket_name }}</td>
+            <td>{{ r.range_label }}</td>
+            <td>{{ r.last_used_bin }}</td>
+            <td style="text-align:right;">{{ r.items_in_last_bin }}</td>
+            <td style="text-align:right;">{{ r.capacity_last_bin }}</td>
+            <td style="text-align:right;">{{ r.remaining }}</td>
+            <td>{{ r.next_bin }}</td>
+            <td>
+              {% if r.next_bin_range_conflicts or not r.next_bin_within_range or not r.next_bin_has_mapping %}
+                <span class="bad">YES</span>
+                <span class="muted">
+                  —
+                  {% if not r.next_bin_within_range %}
+                    next bin outside allowed range
+                  {% elif not r.next_bin_has_mapping %}
+                    no physical mapping for next bin
+                  {% elif r.next_bin_range_conflicts %}
+                    conflicts with:
+                    {% for b in r.next_bin_range_conflicts %}
+                      {{ b }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                  {% endif %}
+                </span>
+              {% else %}
+                <span class="good">No</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="8" class="muted">No rows.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+{% endblock %}

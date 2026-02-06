@@ -1,5 +1,6 @@
 from django.urls import path
 from django.views.generic import RedirectView
+from .views_reports import first_last_by_physical_bin_pdf
 from .views import (
     DashboardView,
     CatalogListView,
@@ -13,6 +14,9 @@ from .views import (
     MediaTypeListView,
     MediaTypeDetailView,
     CuratedView,
+    EarlyWarningView,
+    FirstLastByBinView,
+    RebinPreviewPdfView,
 )
 
 app_name = "catalog_public"
@@ -44,4 +48,10 @@ urlpatterns = [
     path("curated/cander/", CuratedView.as_view(), {"key": "cander"}, name="curated_cander"),
     path("curated/darvina/", CuratedView.as_view(), {"key": "darvina"}, name="curated_darvina"),
     path("curated/audiophile/", CuratedView.as_view(), {"key": "audiophile"}, name="curated_audiophile"),
+
+    # Reports (staff-only)
+    path("reports/early-warning/", EarlyWarningView.as_view(), name="report_early_warning"),
+    path("reports/first-last/", FirstLastByBinView.as_view(), name="report_first_last"),
+    path("reports/first-last.pdf", first_last_by_physical_bin_pdf, name="first_last_pdf"),
+
 ]

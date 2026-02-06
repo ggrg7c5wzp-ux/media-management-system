@@ -20,6 +20,16 @@ COPY src/ /app/src
 RUN echo "==== /app/src contents ====" && ls -la /app/src && echo "==== find scripts ====" && find /app/src -maxdepth 3 -type d -name scripts -print
 
 WORKDIR /app/src
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgobject-2.0-0 \
+    libcairo2 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libgdk-pixbuf-2.0-0 \
+    libffi8 \
+    shared-mime-info \
+    fonts-dejavu-core \
+ && rm -rf /var/lib/apt/lists/*
 
 # Start the web service
 CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000}"]

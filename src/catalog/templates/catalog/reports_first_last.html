@@ -1,0 +1,44 @@
+{% extends "catalog/base.html" %}
+
+{% block title %}First/Last by Physical Bin{% endblock %}
+
+{% block content %}
+  <h1>First/Last by Physical Bin</h1>
+
+  <form method="get" style="display:flex; gap:12px; align-items:center; margin: 12px 0 18px;">
+    <label for="zone" style="white-space:nowrap;">Zone</label>
+    <select name="zone" id="zone" style="min-width: 380px;">
+      {% for z in zones %}
+        <option value="{{ z.code }}" {% if zone and z.code == zone.code %}selected{% endif %}>
+          {{ z.code }} — {{ z.name }}
+        </option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn">Run</button>
+  </form>
+
+  {% if rows %}
+    <table class="table" style="width:100%; max-width: 980px;">
+      <thead>
+        <tr>
+          <th style="text-align:left;">Physical Bin</th>
+          <th style="text-align:left;">First</th>
+          <th style="text-align:left;">Last</th>
+          <th style="text-align:right;">Count</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+          <tr>
+            <td>{{ r.physical_bin }}</td>
+            <td>{{ r.first_item }}</td>
+            <td>{{ r.last_item }}</td>
+            <td style="text-align:right;">{{ r.count }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p style="opacity:0.85;">No rows.</p>
+  {% endif %}
+{% endblock %}

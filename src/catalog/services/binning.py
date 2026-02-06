@@ -152,6 +152,84 @@ def rebin_zone(*, zone: StorageZone, record_moves: bool = False, notes: str = ""
     return runs
 
 
+
+# =============================================================================
+# Preview (no DB writes)
+# =============================================================================
+
+@dataclass(frozen=True)
+class RebinPreviewMove:
+    media_item_id: int
+    artist: str
+    title: str
+    old_logical_bin: str
+    new_logical_bin: str
+    old_physical_bin: str
+    new_physical_bin: str
+
+
+def preview_rebin_scope(*, zone: StorageZone, bucket_id: Optional[int] = None) -> list[RebinPreviewMove]:
+    """
+    Compute (but do NOT apply) the bin moves that would result from a deterministic rebin.
+
+    This mirrors rebin_scope() but avoids any DB writes (no bulk_update, no RebinRun/RebinMove rows).
+    Useful for reports/PDFs and for prod debugging where web request timeouts are a risk.
+    """
+    if zone.sort_strategy != StorageZone.SortStrategy.BUCKETED:
+        bucket_id = None
+
+    items = list(_items_in_scope(zone=zone, bucket_id=bucket_id))
+    if not items:
+        return []
+
+    bins, _reason = _logical_bins_for_scope(zone=zone, bucket_id=bucket_id)
+    if not bins:
+        return []
+
+    moves: list[RebinPreviewMove] = []
+    for idx, it in enumerate(items):
+        chosen = _choose_bin_by_capacity(zone, bins, idx)
+        if chosen is None:
+            continue
+
+        old_lb = cast(Optional[LogicalBin], getattr(it, "logical_bin", None))
+        old_lb_id = cast(Optional[int], getattr(it, "logical_bin_id", None))
+        chosen_id = cast(int, chosen.pk)
+
+        if old_lb_id != chosen_id:
+            moves.append(
+                RebinPreviewMove(
+                    media_item_id=cast(int, it.pk),
+                    artist=getattr(it.artist, "display_name", "") if getattr(it, "artist", None) else "",
+                    title=getattr(it, "title", "") or "",
+                    old_logical_bin=str(old_lb) if old_lb else "",
+                    new_logical_bin=str(chosen),
+                    old_physical_bin=_physical_label_for_logical(old_lb),
+                    new_physical_bin=_physical_label_for_logical(chosen),
+                )
+            )
+
+    return moves
+
+
+def preview_rebin_zone(*, zone: StorageZone) -> dict[str, list[RebinPreviewMove]]:
+    """
+    Return a dict of moves keyed by scope label.
+    - BUCKETED: one entry per active bucket plus a bucketless scope (key="(bucketless)")
+    - ALPHA_ONLY: single entry (key="(zone)")
+    """
+    if zone.sort_strategy == StorageZone.SortStrategy.BUCKETED:
+        bucket_ids = list(SortBucket.objects.filter(is_active=True).values_list("pk", flat=True))
+        scopes: dict[str, list[RebinPreviewMove]] = {}
+        for bid in bucket_ids:
+            label = str(SortBucket.objects.filter(pk=bid).values_list("name", flat=True).first() or f"bucket:{bid}")
+            scopes[label] = preview_rebin_scope(zone=zone, bucket_id=bid)
+        scopes["(bucketless)"] = preview_rebin_scope(zone=zone, bucket_id=None)
+        return scopes
+
+    return {"(zone)": preview_rebin_scope(zone=zone, bucket_id=None)}
+
+
 # =============================================================================
 # Internals
 # =============================================================================

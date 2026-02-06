@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import datetime
+
 from collections import Counter
 from typing import cast
 from urllib.parse import urlencode
 
+
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.http import HttpRequest, HttpResponse
 from django.db.models import Q, Count, Prefetch
 from django.views.generic import ListView, DetailView, TemplateView
 
@@ -567,3 +572,128 @@ class MediaItemDetailView(DetailView):
         ctx["override_zone"] = item.zone_override
 
         return ctx
+
+
+# ------------------------------------------------------------
+# Reports (staff-only)
+# ------------------------------------------------------------
+
+class StaffOnlyMixin(LoginRequiredMixin, UserPassesTestMixin):
+    request: HttpRequest
+    def test_func(self):
+        user = getattr(self.request, "user", None)
+        return bool(user and user.is_staff)
+
+
+class EarlyWarningView(StaffOnlyMixin, TemplateView):
+    template_name = "catalog/reports_early_warning.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        zone_code = self.request.GET.get("zone", "GARAGE_MAIN")
+        zone = StorageZone.objects.filter(code=zone_code).first()
+        ctx["zone"] = zone
+        ctx["zones"] = StorageZone.objects.order_by("code")
+        if zone:
+            from catalog.services.reports import early_warning_for_zone
+            rows = early_warning_for_zone(zone=zone)
+            ctx["rows"] = rows
+
+            import json, logging
+            logging.getLogger(__name__).info(
+                "EARLY_WARNING sample row: %s",
+                json.dumps(rows[0], default=str) if rows else "NO_ROWS",
+            )
+        else:
+            ctx["rows"] = []
+
+        return ctx
+
+
+class FirstLastByBinView(StaffOnlyMixin, TemplateView):
+    template_name = "catalog/reports_first_last.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        zone_code = self.request.GET.get("zone", "GARAGE_MAIN")
+        zone = StorageZone.objects.filter(code=zone_code).first()
+        ctx["zone"] = zone
+        ctx["zones"] = StorageZone.objects.order_by("code")
+        if zone:
+            from catalog.services.reports import first_last_per_physical_bin
+
+            ctx["rows"] = first_last_per_physical_bin(zone=zone)
+        else:
+            ctx["rows"] = []
+        return ctx
+
+
+class RebinPreviewPdfView(StaffOnlyMixin, TemplateView):
+    """
+    Generates a PDF listing the moves that *would* happen for a rebin, without writing to the DB.
+    Query params:
+      - zone=ZONE_CODE (default GARAGE_MAIN)
+    """
+
+    def get(self, request, *args, **kwargs):
+        zone_code = request.GET.get("zone", "GARAGE_MAIN")
+        zone = StorageZone.objects.filter(code=zone_code).first()
+        if not zone:
+            return HttpResponse("Unknown zone", status=404)
+
+        from io import BytesIO
+
+        from reportlab.lib.pagesizes import letter
+        from reportlab.lib.units import inch
+        from reportlab.pdfgen import canvas
+
+        from catalog.services.binning import preview_rebin_zone
+
+        scopes = preview_rebin_zone(zone=zone)
+
+        buf = BytesIO()
+        c = canvas.Canvas(buf, pagesize=letter)
+        width, height = letter
+        x = 0.75 * inch
+        y = height - 0.75 * inch
+
+        def line(txt: str, dy: float = 12):
+            nonlocal y
+            c.drawString(x, y, txt[:120])
+            y -= dy
+            if y < 0.75 * inch:
+                c.showPage()
+                y = height - 0.75 * inch
+
+        line(f"Rebin Preview (no DB writes) — {zone.name} [{zone.code}]")
+        line(f"Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        line("")
+
+        total_moves = 0
+        for scope_name, moves in scopes.items():
+            total_moves += len(moves)
+            line(f"Scope: {scope_name}  (moves: {len(moves)})")
+            line("-" * 95)
+            if not moves:
+                line("  (no moves)")
+                line("")
+                continue
+
+            for mv in moves:
+                line(f"  {mv.artist} — {mv.title}")
+                if mv.old_physical_bin or mv.new_physical_bin:
+                    line(f"     {mv.old_physical_bin}  →  {mv.new_physical_bin}")
+                else:
+                    line(f"     {mv.old_logical_bin}  →  {mv.new_logical_bin}")
+            line("")
+
+        if total_moves == 0:
+            line("No moves detected. (Everything is already placed deterministically.)")
+
+        c.save()
+        pdf = buf.getvalue()
+        buf.close()
+
+        resp = HttpResponse(pdf, content_type="application/pdf")
+        resp["Content-Disposition"] = f'attachment; filename="rebin_preview_{zone.code}.pdf"'
+        return resp
