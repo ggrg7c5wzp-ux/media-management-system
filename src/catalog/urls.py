@@ -14,6 +14,7 @@ from .views import (
     MediaTypeListView,
     MediaTypeDetailView,
     CuratedView,
+    ReportsLandingView,
     EarlyWarningView,
     FirstLastByBinView,
     RebinPreviewPdfView,
@@ -50,6 +51,7 @@ urlpatterns = [
     path("curated/audiophile/", CuratedView.as_view(), {"key": "audiophile"}, name="curated_audiophile"),
 
     # Reports (staff-only)
+    path("reports/", ReportsLandingView.as_view(), name="reports_index"),
     path("reports/early-warning/", EarlyWarningView.as_view(), name="report_early_warning"),
     path("reports/first-last/", FirstLastByBinView.as_view(), name="report_first_last"),
     path("reports/first-last.pdf", first_last_by_physical_bin_pdf, name="first_last_pdf"),

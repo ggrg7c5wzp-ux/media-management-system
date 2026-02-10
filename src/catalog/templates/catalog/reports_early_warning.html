@@ -2,71 +2,106 @@
 {% block title %}Early Warning{% endblock %}
 
 {% block content %}
-<div class="page-title">Early Warning</div>
+<style>
+  .ew-help { color: rgba(255,255,255,.70); }
+  .ew-reason { color: rgba(255,255,255,.70); }
+  .ew-table { table-layout: fixed; }
+  .ew-table th, .ew-table td { vertical-align: middle; }
+</style>
+<div class="d-flex align-items-end justify-content-between flex-wrap gap-2">
+  <div>
+    <h2 class="ts-brand mb-0">Early Warning</h2>
+    <div class="ew-help fst-italic mb-2">
+      Heads-up view: remaining capacity in the last-used logical bin per bucket, plus whether the next logical bin is safe to grow
+    </div>
+  </div>
 
-<form method="get" class="report-controls">
-  <label for="zone">Zone</label>
-  <select id="zone" name="zone">
-    {% for z in zones %}
-      <option value="{{ z.code }}" {% if zone and z.code == zone.code %}selected{% endif %}>
-        {{ z.code }} — {{ z.name }}
-      </option>
-    {% endfor %}
-  </select>
-  <button type="submit">Run</button>
+  <div class="d-flex align-items-center gap-2">
+    <span class="badge text-bg-success">10+ free</span>
+    <span class="badge text-bg-warning">5–9 free</span>
+    <span class="badge text-bg-danger">0–4 free</span>
+  </div>
+</div>
+
+<form method="get" class="row g-2 align-items-end mt-2">
+  <div class="col-12 col-md-6 col-lg-5">
+    <label for="zone" class="form-label mb-1">Zone</label>
+    <select id="zone" name="zone" class="form-select">
+      {% for z in zones %}
+        <option value="{{ z.code }}" {% if zone and z.code == zone.code %}selected{% endif %}>
+          {{ z.code }} — {{ z.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-12 col-md-auto">
+    <button type="submit" class="btn btn-outline-secondary">Run</button>
+  </div>
 </form>
 
 {% if not zone %}
   <div class="report-note">Unknown zone.</div>
 {% else %}
-  <div class="report-table-wrap">
-    <table class="report-table">
+  <div class="table-responsive" style="border: 1px solid rgba(255,216,158,0.10); border-radius: 14px; overflow: hidden;">
+    <table class="table table-dark table-striped align-middle ew-table" style="table-layout: fixed;">
+    <colgroup>
+      <col style="width: 32%">
+      <col style="width: 10%">
+      <col style="width: 9%">
+      <col style="width: 9%">
+      <col style="width: 13%">
+      <col style="width: 9%">
+      <col style="width: 18%">
+    </colgroup>
       <thead>
         <tr>
-          <th>Bucket</th>
-          <th>Range</th>
-          <th>Last Logical Bin</th>
-          <th style="text-align:right;">Used</th>
-          <th style="text-align:right;">Capacity</th>
-          <th style="text-align:right;">Remaining</th>
-          <th>Next Bin</th>
-          <th>Next Bin Collision?</th>
+          <th style="width: 26%;">Bucket</th>
+          <th class="text-end" style="width: 10%;">Last Bin</th>
+          <th class="text-end" style="width: 10%;">Used</th>
+          <th class="text-end" style="width: 10%;">Cap</th>
+          <th style="width: 14%;">Remaining</th>
+          <th class="text-end" style="width: 10%;">Next Bin</th>
+          <th style="width: 20%;">Next Bin Status</th>
         </tr>
       </thead>
       <tbody>
         {% for r in rows %}
           <tr>
-            <td>{{ r.bucket_name }}</td>
-            <td>{{ r.range_label }}</td>
-            <td>{{ r.last_used_bin }}</td>
-            <td style="text-align:right;">{{ r.items_in_last_bin }}</td>
-            <td style="text-align:right;">{{ r.capacity_last_bin }}</td>
-            <td style="text-align:right;">{{ r.remaining }}</td>
-            <td>{{ r.next_bin }}</td>
+            <td style="white-space: normal; overflow-wrap: anywhere;">{{ r.bucket_name }}</td>
+
+            <td class="text-end mono">{% if r.last_used_bin %}{{ r.last_used_bin }}{% else %}—{% endif %}</td>
+            <td class="text-end mono">{{ r.items_in_last_bin }}</td>
+            <td class="text-end mono">{% if r.capacity_last_bin is not None %}{{ r.capacity_last_bin }}{% else %}—{% endif %}</td>
+
             <td>
+              {% if r.remaining is None %}
+                <span class="text-muted">—</span>
+              {% else %}
+                {% if r.remaining >= 10 %}
+                  <span class="badge text-bg-success">{{ r.remaining }} free</span>
+                {% elif r.remaining >= 5 %}
+                  <span class="badge text-bg-warning">{{ r.remaining }} free</span>
+                {% else %}
+                  <span class="badge text-bg-danger">{{ r.remaining }} free</span>
+                {% endif %}
+              {% endif %}
+            </td>
+
+            <td class="text-end mono">{% if r.next_bin is not None %}{{ r.next_bin }}{% else %}—{% endif %}</td>
+
+            <td style="white-space: normal; overflow-wrap: normal;">
               {% if r.next_bin_range_conflicts or not r.next_bin_within_range or not r.next_bin_has_mapping %}
-                <span class="bad">YES</span>
-                <span class="muted">
-                  —
-                  {% if not r.next_bin_within_range %}
-                    next bin outside allowed range
-                  {% elif not r.next_bin_has_mapping %}
-                    no physical mapping for next bin
-                  {% elif r.next_bin_range_conflicts %}
-                    conflicts with:
-                    {% for b in r.next_bin_range_conflicts %}
-                      {{ b }}{% if not forloop.last %}, {% endif %}
-                    {% endfor %}
-                  {% endif %}
+                <span class="badge text-bg-danger">Collision</span>
+                <span class="ew-reason ms-2"> {{ row.next_bin_reason }}     
                 </span>
               {% else %}
-                <span class="good">No</span>
+                <span class="badge text-bg-success">OK</span>
               {% endif %}
             </td>
           </tr>
         {% empty %}
           <tr>
-            <td colspan="8" class="muted">No rows.</td>
+            <td colspan="7" class="text-muted">No rows.</td>
           </tr>
         {% endfor %}
       </tbody>

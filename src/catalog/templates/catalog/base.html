@@ -364,6 +364,13 @@
               <a class="{% if p|slice:':17' == '/curated/darvina/' or p == '/curated/darvina' %}active{% endif %}" href="{% url 'catalog_public:curated_darvina' %}">😈 <span>Darvina’s Picks</span></a>
               <a class="{% if p|slice:':20' == '/curated/audiophile/' or p == '/curated/audiophile' %}active{% endif %}" href="{% url 'catalog_public:curated_audiophile' %}">🎧 <span>Audiophile</span></a>
             </nav>
+
+            {% if request.user.is_authenticated and request.user.is_staff %}
+              <div class="section-title">Staff</div>
+              <nav class="ts-nav">
+                <a class="{% if p|slice:':9' == '/reports/' or p|slice:':8' == '/reports' %}active{% endif %}" href="{% url 'catalog_public:reports_index' %}">🧾 <span>Reports</span></a>
+              </nav>
+            {% endif %}
           </div>
 
             {% endwith %}        </aside>
@@ -397,6 +404,13 @@
                 <a class="{% if p|slice:':17' == '/curated/darvina/' or p == '/curated/darvina' %}active{% endif %}" href="{% url 'catalog_public:curated_darvina' %}">😈 <span>Darvina’s Picks</span></a>
                 <a class="{% if p|slice:':20' == '/curated/audiophile/' or p == '/curated/audiophile' %}active{% endif %}" href="{% url 'catalog_public:curated_audiophile' %}">🎧 <span>Audiophile</span></a>
               </nav>
+
+              {% if request.user.is_authenticated and request.user.is_staff %}
+                <div class="section-title">Staff</div>
+                <nav class="ts-nav">
+                  <a class="{% if p|slice:':9' == '/reports/' or p|slice:':8' == '/reports' %}active{% endif %}" href="{% url 'catalog_public:reports_index' %}">🧾 <span>Reports</span></a>
+                </nav>
+              {% endif %}
             </div>
           </div>
         </div>

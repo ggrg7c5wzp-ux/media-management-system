@@ -1,0 +1,34 @@
+{% extends "catalog/base.html" %}
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+  <div class="page-title">Reports</div>
+
+  <div class="text-muted mb-3" style="color: rgba(255,255,255,.70) !important;">
+    Staff-only hub for operational and printable outputs.
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header">Operational Reports</div>
+    <div class="card-body">
+      <div class="list-group list-group-flush">
+        {% for r in operational_reports %}
+          <a class="list-group-item list-group-item-action bg-transparent text-light"
+             href="{% url r.url %}">
+            <div class="fw-semibold">{{ r.title }}</div>
+            <div class="small" style="color: rgba(255,255,255,.70);">{{ r.desc }}</div>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Catalog Book</div>
+    <div class="card-body">
+      <div class="small" style="color: rgba(255,255,255,.70);">
+        Print-first “book” pages will appear here as we bring sections online.
+      </div>
+    </div>
+  </div>
+{% endblock %}

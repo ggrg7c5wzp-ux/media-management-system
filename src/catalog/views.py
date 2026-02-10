@@ -610,6 +610,45 @@ class EarlyWarningView(StaffOnlyMixin, TemplateView):
         return ctx
 
 
+class ReportsLandingView(StaffOnlyMixin, TemplateView):
+    """Staff-only hub so we don't rely on browser bookmarks."""
+
+    template_name = "catalog/reports_index.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+
+        # Operational reports (not part of the printable "book")
+        ctx["operational_reports"] = [
+            {
+                "title": "Early Warning",
+                "desc": "Capacity remaining in the last-used logical bin per bucket, plus next-bin collision checks.",
+                "url": "catalog_public:report_early_warning",
+            },
+            {
+                "title": "First / Last by Physical Bin",
+                "desc": "Per physical bin: first item, last item, and count (HTML view).",
+                "url": "catalog_public:report_first_last",
+            },
+            {
+                "title": "First / Last by Physical Bin (PDF)",
+                "desc": "Printable PDF output of the First/Last report.",
+                "url": "catalog_public:first_last_pdf",
+            },
+        ]
+
+        # Catalog Book (print-first, PDF-ready). These routes will be wired next.
+        ctx["catalog_book"] = [
+            {
+                "title": "Catalog Book (coming online)",
+                "desc": "The printable physical catalog: cover + sections like Standard LPs, New Additions, Audiophile, Picks, etc.",
+                "url": None,
+            }
+        ]
+
+        return ctx
+
+
 class FirstLastByBinView(StaffOnlyMixin, TemplateView):
     template_name = "catalog/reports_first_last.html"
 
