@@ -639,15 +639,26 @@ class ReportsLandingView(StaffOnlyMixin, TemplateView):
         # Catalog Book (print-first, PDF-ready)
         ctx["catalog_book"] = [
             {
-                "title": "Standard LP Catalog (HTML)",
-                "desc": "Printable-style page for the Standard LP section of the binder.",
-                "url": "catalog_public:book_standard_lps",
+                "title": "Standard LP Catalog — Main (PDF)",
+                "desc": "Standard LPs excluding Roots + Soundtracks + Compilations/Holiday/Misc.",
+                "url": "catalog_public:book_standard_lps_main_pdf",
             },
             {
-                "title": "Standard LP Catalog (PDF)",
-                "desc": "PDF output of the Standard LP catalog page.",
-                "url": "catalog_public:book_standard_lps_pdf",
+                "title": "Standard LP Catalog — Roots (PDF)",
+                "desc": "Standard LPs in Blues/Jazz/Vocals.",
+                "url": "catalog_public:book_standard_lps_roots_pdf",
             },
+            {
+                "title": "Standard LP Catalog — Soundtracks (PDF)",
+                "desc": "Standard LPs in Soundtracks.",
+                "url": "catalog_public:book_standard_lps_soundtracks_pdf",
+            },
+            {
+                "title": "Standard LP Catalog — Misc (PDF)",
+                "desc": "Standard LPs in Compilations/Holiday/Miscellaneous.",
+                "url": "catalog_public:book_standard_lps_misc_pdf",
+            },
+
         ]
 
         return ctx

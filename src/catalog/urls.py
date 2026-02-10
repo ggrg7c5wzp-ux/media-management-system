@@ -1,6 +1,6 @@
 from django.urls import path
 from django.views.generic import RedirectView
-from .views_reports import first_last_by_physical_bin_pdf, standard_lp_catalog_pdf
+
 from .views import (
     DashboardView,
     CatalogListView,
@@ -19,6 +19,15 @@ from .views import (
     FirstLastByBinView,
     RebinPreviewPdfView,
     StandardLPCatalogBookView,
+)
+
+from .views_reports import (
+    first_last_by_physical_bin_pdf,
+    standard_lp_catalog_pdf,
+    standard_lp_catalog_main_pdf,
+    standard_lp_catalog_roots_pdf,
+    standard_lp_catalog_soundtracks_pdf,
+    standard_lp_catalog_misc_pdf,
 )
 
 app_name = "catalog_public"
@@ -56,7 +65,15 @@ urlpatterns = [
     path("reports/early-warning/", EarlyWarningView.as_view(), name="report_early_warning"),
     path("reports/first-last/", FirstLastByBinView.as_view(), name="report_first_last"),
     path("reports/first-last.pdf", first_last_by_physical_bin_pdf, name="first_last_pdf"),
+
+    # Catalog Book
     path("reports/book/standard-lps/", StandardLPCatalogBookView.as_view(), name="book_standard_lps"),
     path("reports/book/standard-lps.pdf", standard_lp_catalog_pdf, name="book_standard_lps_pdf"),
-    
+    path("reports/book/standard-lps-main.pdf", standard_lp_catalog_main_pdf, name="book_standard_lps_main_pdf"),
+    path("reports/book/standard-lps-roots.pdf", standard_lp_catalog_roots_pdf, name="book_standard_lps_roots_pdf"),
+    path("reports/book/standard-lps-soundtracks.pdf", standard_lp_catalog_soundtracks_pdf, name="book_standard_lps_soundtracks_pdf"),
+    path("reports/book/standard-lps-misc.pdf", standard_lp_catalog_misc_pdf, name="book_standard_lps_misc_pdf"),
+
+    # (Still here, but not part of Phase 4 requirements — you can remove later if you want)
+    path("reports/rebin-preview.pdf", RebinPreviewPdfView.as_view(), name="rebin_preview_pdf"),
 ]

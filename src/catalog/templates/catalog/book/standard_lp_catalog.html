@@ -24,18 +24,26 @@
       {% for item in items %}
         <tr>
           <td>
-            {{ item.artist.display_name|default:item.artist.artist_name_primary|default:item.artist }}
+            {% if item.artist.artist_type == "PERSON" and item.artist.sort_name %}
+              {{ item.artist.sort_name }}
+            {% elif item.artist.display_name %}
+              {{ item.artist.display_name }}
+            {% elif item.artist.artist_name_primary %}
+              {{ item.artist.artist_name_primary }}
+            {% else %}
+              {{ item.artist }}
+            {% endif %}
           </td>
           <td>{{ item.title }}</td>
           <td class="col-year">
             {{ item.pressing_year|default:"" }}
           </td>
           <td class="col-bin">
-            {# Reuse your existing helper if present #}
-            {% if item.display_bin_number %}
-              {{ item.display_bin_number }}
-            {% elif item.logical_bin and item.logical_bin.linear_number %}
-              {{ item.logical_bin.linear_number }}
+            {# Prefer physical bin if mapped #}
+            {% if item.physical_bin %}
+              {{ item.physical_bin.linear_bin_number }}
+            {% elif item.logical_bin %}
+              {{ item.logical_bin.linear_number|default:"—" }}
             {% else %}
               —
             {% endif %}

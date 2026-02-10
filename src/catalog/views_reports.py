@@ -11,6 +11,11 @@ from weasyprint import HTML
 
 from catalog.models import StorageZone, MediaItem, MediaType
 
+
+# -----------------------------------------------------------------------------
+# First/Last by Physical Bin (HTML + PDF)
+# -----------------------------------------------------------------------------
+
 def _first_last_by_physical_bin_rows(*, zone: StorageZone):
     qs = (
         MediaItem.objects
@@ -26,7 +31,7 @@ def _first_last_by_physical_bin_rows(*, zone: StorageZone):
         )
         .order_by("artist__sort_name", "title")
     )
-    
+
     grouped: dict[str, list[tuple[int, str]]] = defaultdict(list)
 
     for item in qs:
@@ -63,6 +68,7 @@ def _first_last_by_physical_bin_rows(*, zone: StorageZone):
         r.pop("_bin_sort", None)
     return rows
 
+
 def _get_first_last_context(*, zone_code: str | None) -> dict:
     zones = StorageZone.objects.order_by("code")
 
@@ -81,21 +87,16 @@ def _get_first_last_context(*, zone_code: str | None) -> dict:
     return {"zones": zones, "zone": zone, "rows": rows}
 
 
-
 @staff_member_required
 def first_last_by_physical_bin(request: HttpRequest) -> HttpResponse:
-    """
-    HTML report view (your existing page).
-    """
+    """HTML report view."""
     context = _get_first_last_context(zone_code=request.GET.get("zone"))
     return render(request, "catalog/reports_first_last.html", context)
 
 
 @staff_member_required
 def first_last_by_physical_bin_pdf(request: HttpRequest) -> HttpResponse:
-    """
-    PDF version of the same report.
-    """
+    """PDF version of the same report."""
     context = _get_first_last_context(zone_code=request.GET.get("zone"))
 
     html = render_to_string(
@@ -110,12 +111,15 @@ def first_last_by_physical_bin_pdf(request: HttpRequest) -> HttpResponse:
     resp["Content-Disposition"] = 'inline; filename="first_last_by_physical_bin.pdf"'
     return resp
 
-    
-    
-@staff_member_required
-def standard_lp_catalog_pdf(request: HttpRequest) -> HttpResponse:
+
+# -----------------------------------------------------------------------------
+# Catalog Book: Standard LP (PDF variants)
+# -----------------------------------------------------------------------------
+
+def _standard_lp_qs():
     """
-    PDF output for the Standard LP catalog book page.
+    Returns (media_type, queryset) for Standard LP items.
+    NOTE: relies on MediaType.name == "Standard LP" (case-insensitive).
     """
     mt = MediaType.objects.filter(name__iexact="Standard LP").first()
 
@@ -124,6 +128,7 @@ def standard_lp_catalog_pdf(request: HttpRequest) -> HttpResponse:
         .select_related(
             "artist",
             "media_type",
+            "bucket",
             "zone_override",
             "logical_bin",
             "logical_bin__mapping",
@@ -136,21 +141,125 @@ def standard_lp_catalog_pdf(request: HttpRequest) -> HttpResponse:
     if mt:
         qs = qs.filter(media_type=mt)
 
-    context = {
-        "items": qs,
-        "book_title": "Standard LP Catalog",
-        "generated_on": None,  # template handles blank fine
-        "media_type": mt,
-    }
+    return mt, qs
 
-    html = render_to_string(
-        "catalog/book/standard_lp_catalog.html",
-        context,
-        request=request,
-    )
 
+def _pdf_response_from_template(
+    *,
+    request: HttpRequest,
+    template_name: str,
+    context: dict,
+    filename: str,
+) -> HttpResponse:
+    html = render_to_string(template_name, context, request=request)
     pdf_bytes = HTML(string=html, base_url=request.build_absolute_uri("/")).write_pdf()
 
     resp = HttpResponse(pdf_bytes, content_type="application/pdf")
-    resp["Content-Disposition"] = 'inline; filename="standard_lp_catalog.pdf"'
+    resp["Content-Disposition"] = f'inline; filename="{filename}"'
     return resp
+
+
+@staff_member_required
+def standard_lp_catalog_pdf(request: HttpRequest) -> HttpResponse:
+    """All Standard LPs (PDF)."""
+    mt, qs = _standard_lp_qs()
+
+    context = {
+        "items": qs,
+        "book_title": "Standard LP Catalog",
+        "generated_on": None,
+        "media_type": mt,
+    }
+    return _pdf_response_from_template(
+        request=request,
+        template_name="catalog/book/standard_lp_catalog.html",
+        context=context,
+        filename="standard_lp_catalog.pdf",
+    )
+
+
+# Adjust these bucket names to match your DB exactly if needed.
+ROOTS_BUCKETS = ["Blues, Jazz, Vocals"]
+SOUNDTRACK_BUCKETS = ["Soundtracks"]
+MISC_BUCKETS = ["Compilations", "Holiday", "Miscellaneous"]
+EXCLUDE_FOR_MAIN = ROOTS_BUCKETS + SOUNDTRACK_BUCKETS + MISC_BUCKETS
+
+
+@staff_member_required
+def standard_lp_catalog_main_pdf(request: HttpRequest) -> HttpResponse:
+    """Standard LPs excluding Roots + Soundtracks + (Compilations/Holiday/Misc)."""
+    mt, qs = _standard_lp_qs()
+    qs = qs.exclude(bucket__name__in=EXCLUDE_FOR_MAIN)
+
+    context = {
+        "items": qs,
+        "book_title": "Standard LP Catalog — Main",
+        "generated_on": None,
+        "media_type": mt,
+    }
+    return _pdf_response_from_template(
+        request=request,
+        template_name="catalog/book/standard_lp_catalog.html",
+        context=context,
+        filename="standard_lp_catalog_main.pdf",
+    )
+
+
+@staff_member_required
+def standard_lp_catalog_roots_pdf(request: HttpRequest) -> HttpResponse:
+    """Standard LPs for Blues/Jazz/Vocals."""
+    mt, qs = _standard_lp_qs()
+    qs = qs.filter(bucket__name__in=ROOTS_BUCKETS)
+
+    context = {
+        "items": qs,
+        "book_title": "Standard LP Catalog — Roots",
+        "generated_on": None,
+        "media_type": mt,
+    }
+    return _pdf_response_from_template(
+        request=request,
+        template_name="catalog/book/standard_lp_catalog.html",
+        context=context,
+        filename="standard_lp_catalog_roots.pdf",
+    )
+
+
+@staff_member_required
+def standard_lp_catalog_soundtracks_pdf(request: HttpRequest) -> HttpResponse:
+    """Standard LPs for Soundtracks."""
+    mt, qs = _standard_lp_qs()
+    qs = qs.filter(bucket__name__in=SOUNDTRACK_BUCKETS)
+
+    context = {
+        "items": qs,
+        "book_title": "Standard LP Catalog — Soundtracks",
+        "generated_on": None,
+        "media_type": mt,
+    }
+    return _pdf_response_from_template(
+        request=request,
+        template_name="catalog/book/standard_lp_catalog.html",
+        context=context,
+        filename="standard_lp_catalog_soundtracks.pdf",
+    )
+
+
+@staff_member_required
+def standard_lp_catalog_misc_pdf(request: HttpRequest) -> HttpResponse:
+    """Standard LPs for Compilations + Holiday + Miscellaneous."""
+    mt, qs = _standard_lp_qs()
+    qs = qs.filter(bucket__name__in=MISC_BUCKETS)
+
+    context = {
+        "items": qs,
+        "book_title": "Standard LP Catalog — Misc",
+        "generated_on": None,
+        "media_type": mt,
+    }
+    return _pdf_response_from_template(
+        request=request,
+        template_name="catalog/book/standard_lp_catalog.html",
+        context=context,
+        filename="standard_lp_catalog_misc.pdf",
+    )

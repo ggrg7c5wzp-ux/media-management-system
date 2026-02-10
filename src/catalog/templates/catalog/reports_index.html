@@ -1,34 +1,134 @@
 {% extends "catalog/base.html" %}
+{% load static %}
+
 {% block title %}Reports{% endblock %}
 
 {% block content %}
-  <div class="page-title">Reports</div>
 
-  <div class="text-muted mb-3" style="color: rgba(226, 228, 218, 0.7) !important;">
-    Staff-only hub for operational and printable outputs.
-  </div>
+<style>
+  /* Page-scoped polish for Reports only */
+  .reports-page h1 {
+    font-size: 2.2rem;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+  }
 
-  <div class="card mb-3" style="color: rgba(184, 218, 64, 0.7) !important;">
-    <div class="card-header">Operational Reports</div>
-    <div class="card-body">
-      <div class="list-group list-group-flush">
+  .reports-page .subtitle {
+    color: rgba(255,255,255,0.78);
+    margin: 0 0 1.25rem 0;
+    max-width: 70ch;
+    line-height: 1.4;
+  }
+
+  .reports-page .section-title {
+    font-size: 1.35rem;
+    margin: 0 0 0.75rem 0;
+    color: rgba(255, 215, 130, 0.92); /* warm gold */
+    letter-spacing: 0.3px;
+  }
+
+  .reports-page .card {
+    padding: 18px 18px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.10);
+    background: rgba(0,0,0,0.25);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  }
+
+  .reports-page .report-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .reports-page .report-row {
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(0,0,0,0.20);
+  }
+
+  .reports-page .report-row:hover {
+    border-color: rgba(255, 215, 130, 0.35);
+    background: rgba(0,0,0,0.28);
+  }
+
+  .reports-page .report-title a {
+    font-size: 1.05rem;
+    font-weight: 650;
+    color: rgba(255, 215, 130, 0.98);
+    text-decoration: none;
+  }
+
+  .reports-page .report-title a:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .reports-page .report-desc {
+    margin-top: 4px;
+    color: rgba(255,255,255,0.80);
+    line-height: 1.35;
+    font-size: 0.95rem;
+    max-width: 90ch;
+  }
+
+  /* Your global .muted is too dark here; override locally */
+  .reports-page .muted {
+    color: rgba(255,255,255,0.70) !important;
+  }
+
+  .reports-page .hint {
+    color: rgba(255,255,255,0.68);
+    font-style: italic;
+    margin-top: 0.25rem;
+  }
+</style>
+
+<div class="page reports-page">
+  <h1>Reports</h1>
+  <p class="subtitle">Staff-only hub for operational and printable outputs.</p>
+
+  <div class="card">
+    <h2 class="section-title">Operational Reports</h2>
+
+    {% if operational_reports %}
+      <div class="report-list">
         {% for r in operational_reports %}
-          <a class="list-group-item list-group-item-action bg-transparent text-light"
-             href="{% url r.url %}">
-            <div class="fw-semibold">{{ r.title }}</div>
-            <div class="small" style="color: rgba(255,255,255,.70);">{{ r.desc }}</div>
-          </a>
+          <div class="report-row">
+            <div class="report-title">
+              <a href="{% url r.url %}">{{ r.title }}</a>
+            </div>
+            {% if r.desc %}
+              <div class="report-desc">{{ r.desc }}</div>
+            {% endif %}
+          </div>
         {% endfor %}
       </div>
-    </div>
+    {% else %}
+      <p class="hint">No operational reports configured.</p>
+    {% endif %}
   </div>
 
-  <div class="card mb-3" style="color: rgba(184, 218, 64, 0.7) !important;">
-    <div class="card-header">Catalog Book</div>
-    <div class="card-body">
-      <div class="small" style="color: rgba(255,255,255,.70);">
-        Print-first “book” pages will appear here as we bring sections online.
+  <div class="card" style="margin-top: 18px;">
+    <h2 class="section-title">Catalog Book</h2>
+
+    {% if catalog_book %}
+      <div class="report-list">
+        {% for r in catalog_book %}
+          <div class="report-row">
+            <div class="report-title">
+              <a href="{% url r.url %}">{{ r.title }}</a>
+            </div>
+            {% if r.desc %}
+              <div class="report-desc">{{ r.desc }}</div>
+            {% endif %}
+          </div>
+        {% endfor %}
       </div>
-    </div>
+    {% else %}
+      <p class="hint">Print-first “book” pages will appear here as we bring sections online.</p>
+    {% endif %}
   </div>
+</div>
 {% endblock %}
