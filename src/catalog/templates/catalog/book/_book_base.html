@@ -1,0 +1,115 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ book_title|default:"Catalog Book" }}</title>
+
+    <!-- Normal static link (works in dev, and in prod when static is configured) -->
+    <link rel="stylesheet" href="{% static 'catalog/book.css' %}">
+
+    <!-- WeasyPrint safety net: if static serving is flaky in prod, PDF still looks correct -->
+    <style>
+      /* Page + print */
+      @page {
+        size: Letter;
+        margin: 0.65in 0.60in 0.75in 0.60in; /* extra bottom for footer */
+      }
+
+      html, body { height: 100%; }
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 10pt;
+        color: #111;
+        background: #fff;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* Header band (Access-style) */
+      .book-title-band {
+        background: #cfe3f6;
+        border: 1px solid #9fb9d6;
+        padding: 10px 14px;
+        text-align: center;
+        margin: 0 0 10px 0;
+      }
+
+      .book-title-band h1 {
+        font-size: 20pt;
+        font-weight: 700;
+        margin: 0;
+        letter-spacing: .2px;
+      }
+
+      /* Optional subtitle line */
+      .book-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin: 0 0 8px 0;
+        font-size: 9pt;
+        color: #444;
+      }
+
+      /* Table styling */
+      table.book-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+
+      table.book-table thead th {
+        border: 1px solid #8f8f8f;
+        background: #f3f3f3;
+        color: #111;
+        font-weight: 700;
+        padding: 4px 6px;
+        text-align: left;
+      }
+
+      table.book-table td {
+        border: 1px solid #b3b3b3;
+        padding: 4px 6px;
+        vertical-align: top;
+        word-wrap: break-word;
+        overflow-wrap: anywhere;
+      }
+
+      /* Light alternating rows like Access */
+      table.book-table tbody tr:nth-child(even) td {
+        background: #f7f7f7;
+      }
+
+      /* Column helpers */
+      .col-year, .col-bin { text-align: right; white-space: nowrap; }
+      .nowrap { white-space: nowrap; }
+
+      /* Repeat headers across PDF pages */
+      thead { display: table-header-group; }
+      tfoot { display: table-footer-group; }
+
+      /* Page break helpers */
+      .page-break { page-break-before: always; }
+      .avoid-break { break-inside: avoid; page-break-inside: avoid; }
+
+      /* Footer */
+      .book-footer {
+        margin-top: 10px;
+        font-size: 8.5pt;
+        color: #666;
+      }
+
+      /* WeasyPrint: avoid huge gaps when printing long artist lists */
+      .book-wrap { width: 100%; }
+
+    </style>
+  </head>
+
+  <body>
+    <div class="book-wrap">
+      {% block book_content %}{% endblock %}
+    </div>
+  </body>
+</html>

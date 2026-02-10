@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404, render
 from django.template.loader import render_to_string
 from weasyprint import HTML
 
-from catalog.models import StorageZone, MediaItem
+from catalog.models import StorageZone, MediaItem, MediaType
 
 def _first_last_by_physical_bin_rows(*, zone: StorageZone):
     qs = (
@@ -106,10 +106,51 @@ def first_last_by_physical_bin_pdf(request: HttpRequest) -> HttpResponse:
 
     pdf_bytes = HTML(string=html, base_url=request.build_absolute_uri("/")).write_pdf()
 
-    zone = context.get("zone")
-    zone_code = zone.code if zone else "NO_ZONE"
-    filename = f"first_last_{zone_code}.pdf"
+    resp = HttpResponse(pdf_bytes, content_type="application/pdf")
+    resp["Content-Disposition"] = 'inline; filename="first_last_by_physical_bin.pdf"'
+    return resp
+
+    
+    
+@staff_member_required
+def standard_lp_catalog_pdf(request: HttpRequest) -> HttpResponse:
+    """
+    PDF output for the Standard LP catalog book page.
+    """
+    mt = MediaType.objects.filter(name__iexact="Standard LP").first()
+
+    qs = (
+        MediaItem.objects
+        .select_related(
+            "artist",
+            "media_type",
+            "zone_override",
+            "logical_bin",
+            "logical_bin__mapping",
+            "logical_bin__mapping__physical_bin",
+            "logical_bin__mapping__physical_bin__zone",
+        )
+        .order_by("artist__sort_name", "title", "pressing_year", "pk")
+    )
+
+    if mt:
+        qs = qs.filter(media_type=mt)
+
+    context = {
+        "items": qs,
+        "book_title": "Standard LP Catalog",
+        "generated_on": None,  # template handles blank fine
+        "media_type": mt,
+    }
+
+    html = render_to_string(
+        "catalog/book/standard_lp_catalog.html",
+        context,
+        request=request,
+    )
+
+    pdf_bytes = HTML(string=html, base_url=request.build_absolute_uri("/")).write_pdf()
 
     resp = HttpResponse(pdf_bytes, content_type="application/pdf")
-    resp["Content-Disposition"] = f'inline; filename="{filename}"'
+    resp["Content-Disposition"] = 'inline; filename="standard_lp_catalog.pdf"'
     return resp

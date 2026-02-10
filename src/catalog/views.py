@@ -612,7 +612,6 @@ class EarlyWarningView(StaffOnlyMixin, TemplateView):
 
 class ReportsLandingView(StaffOnlyMixin, TemplateView):
     """Staff-only hub so we don't rely on browser bookmarks."""
-
     template_name = "catalog/reports_index.html"
 
     def get_context_data(self, **kwargs):
@@ -637,18 +636,55 @@ class ReportsLandingView(StaffOnlyMixin, TemplateView):
             },
         ]
 
-        # Catalog Book (print-first, PDF-ready). These routes will be wired next.
+        # Catalog Book (print-first, PDF-ready)
         ctx["catalog_book"] = [
             {
-                "title": "Catalog Book (coming online)",
-                "desc": "The printable physical catalog: cover + sections like Standard LPs, New Additions, Audiophile, Picks, etc.",
-                "url": None,
-            }
+                "title": "Standard LP Catalog (HTML)",
+                "desc": "Printable-style page for the Standard LP section of the binder.",
+                "url": "catalog_public:book_standard_lps",
+            },
+            {
+                "title": "Standard LP Catalog (PDF)",
+                "desc": "PDF output of the Standard LP catalog page.",
+                "url": "catalog_public:book_standard_lps_pdf",
+            },
         ]
 
         return ctx
 
+class StandardLPCatalogBookView(StaffOnlyMixin, TemplateView):
+    template_name = "catalog/book/standard_lp_catalog.html"
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+
+        mt = MediaType.objects.filter(name__iexact="Standard LP").first()
+
+        qs = (
+            MediaItem.objects
+            .select_related(
+                "artist",
+                "media_type",
+                "zone_override",
+                "logical_bin",
+                "logical_bin__mapping",
+                "logical_bin__mapping__physical_bin",
+                "logical_bin__mapping__physical_bin__zone",
+            )
+            .order_by("artist__sort_name", "title", "pressing_year", "pk")
+        )
+
+        if mt:
+            qs = qs.filter(media_type=mt)
+
+        ctx["items"] = qs
+        ctx["book_title"] = "Standard LP Catalog"
+        ctx["generated_on"] = datetime.datetime.now()
+        ctx["media_type"] = mt
+
+        return ctx
+
+        
 class FirstLastByBinView(StaffOnlyMixin, TemplateView):
     template_name = "catalog/reports_first_last.html"
 

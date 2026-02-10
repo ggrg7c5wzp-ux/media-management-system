@@ -1,0 +1,55 @@
+{% extends "catalog/book/_book_base.html" %}
+
+{% block book_content %}
+  <div class="book-title-band">
+    <h1>{{ book_title|default:"Standard LP Catalog" }}</h1>
+  </div>
+
+  <table class="book-table">
+    <colgroup>
+      <col style="width: 26%">
+      <col style="width: 54%">
+      <col style="width: 10%">
+      <col style="width: 10%">
+    </colgroup>
+    <thead>
+      <tr>
+        <th>Artist</th>
+        <th>Album Title</th>
+        <th class="col-year">Year</th>
+        <th class="col-bin">Bin</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+        <tr>
+          <td>
+            {{ item.artist.display_name|default:item.artist.artist_name_primary|default:item.artist }}
+          </td>
+          <td>{{ item.title }}</td>
+          <td class="col-year">
+            {{ item.pressing_year|default:"" }}
+          </td>
+          <td class="col-bin">
+            {# Reuse your existing helper if present #}
+            {% if item.display_bin_number %}
+              {{ item.display_bin_number }}
+            {% elif item.logical_bin and item.logical_bin.linear_number %}
+              {{ item.logical_bin.linear_number }}
+            {% else %}
+              —
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="4">No Standard LP items found.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="book-footer">
+    Tuesday Saloon — Catalog Book
+  </div>
+{% endblock %}
