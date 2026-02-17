@@ -1,0 +1,49 @@
+{% extends "catalog/book/_book_base.html" %}
+
+{% block book_content %}
+  <div class="book-title-band">
+    <h1>{{ book_title|default:"Audiophile Collection" }}</h1>
+  </div>
+
+  <table class="book-table">
+    <colgroup>
+      <col style="width: 30%">
+      <col style="width: 55%">
+      <col style="width: 15%">
+    </colgroup>
+    <thead>
+      <tr>
+        <th>Artist</th>
+        <th>Album Title</th>
+        <th>Zone</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+        <tr>
+          <td>
+            {% if item.artist.artist_type == "PERSON" and item.artist.sort_name %}
+              {{ item.artist.sort_name }}
+            {% elif item.artist.display_name %}
+              {{ item.artist.display_name }}
+            {% elif item.artist.artist_name_primary %}
+              {{ item.artist.artist_name_primary }}
+            {% else %}
+              {{ item.artist }}
+            {% endif %}
+          </td>
+          <td>{{ item.title }}</td>
+          <td>
+            {% if item.zone_override %}
+              {{ item.zone_override.name }}
+            {% else %}
+              {{ item.media_type.default_zone.name }}
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="3">No items found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

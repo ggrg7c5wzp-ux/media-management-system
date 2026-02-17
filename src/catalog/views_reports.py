@@ -13,7 +13,7 @@ from weasyprint import HTML
 from django.conf import settings
 from pathlib import Path
 
-from catalog.models import StorageZone, MediaItem, MediaType
+from catalog.models import StorageZone, MediaItem, MediaType, Tag
 
 
 # -----------------------------------------------------------------------------
@@ -280,4 +280,155 @@ def standard_lp_catalog_misc_pdf(request: HttpRequest) -> HttpResponse:
         template_name="catalog/book/standard_lp_catalog.html",
         context=context,
         filename="standard_lp_catalog_misc.pdf",
+    )
+
+
+
+# -----------------------------------------------------------------------------
+# Catalog Book: Curated / Mixed Sections (PDF)
+# -----------------------------------------------------------------------------
+
+PICKS_TAG_SLUG_CANDER = "canders-picks"
+PICKS_TAG_SLUG_DARVINA = "darvinas-picks"
+NEW_ADDITIONS_TAG_SLUG = "new-additions"
+
+# NOTE: Premium Pressing is historically misspelled in some data as "Premium Pressimg".
+AUDIOPHILE_TAG_SLUGS = [
+    "special",
+    "premium-pressing",
+    "box-set",
+]
+AUDIOPHILE_TAG_NAME_FALLBACKS = [
+    "Premium Pressing",
+    "Premium Pressimg",
+]
+
+OTHER_MEDIA_TYPE_NAMES = [
+    '7" Vinyl',
+    "Cassette Tape",
+    "CD",
+]
+
+
+def _book_base_qs():
+    """Shared base queryset for book PDFs (kept intentionally simple)."""
+    return (
+        MediaItem.objects
+        .select_related(
+            "artist",
+            "media_type",
+            "media_type__default_zone",
+            "bucket",
+            "zone_override",
+            "logical_bin",
+            "logical_bin__mapping",
+            "logical_bin__mapping__physical_bin",
+            "logical_bin__mapping__physical_bin__zone",
+        )
+        .order_by("artist__sort_name", "title", "pressing_year", "pk")
+    )
+
+
+@staff_member_required
+def curated_new_additions_pdf(request: HttpRequest) -> HttpResponse:
+    """All media items with MediaItem tag = New Additions."""
+    qs = _book_base_qs().filter(
+        media_item_tags__tag__scope=Tag.Scope.MEDIA_ITEM,
+        media_item_tags__tag__slug=NEW_ADDITIONS_TAG_SLUG,
+    ).distinct()
+
+    context = {
+        "items": qs,
+        "book_title": "New Additions",
+        "generated_on": None,
+    }
+    return _pdf_response_from_template(
+        request=request,
+        template_name="catalog/book/curated_catalog.html",
+        context=context,
+        filename="new_additions.pdf",
+    )
+
+
+@staff_member_required
+def curated_canders_picks_pdf(request: HttpRequest) -> HttpResponse:
+    """Media items where Artist tag OR MediaItem tag = Cander's Picks."""
+    qs = _book_base_qs().filter(
+        Q(artist__artist_tags__tag__scope=Tag.Scope.ARTIST, artist__artist_tags__tag__slug=PICKS_TAG_SLUG_CANDER)
+        | Q(media_item_tags__tag__scope=Tag.Scope.MEDIA_ITEM, media_item_tags__tag__slug=PICKS_TAG_SLUG_CANDER)
+    ).distinct()
+
+    context = {
+        "items": qs,
+        "book_title": "Cander's Picks",
+        "generated_on": None,
+    }
+    return _pdf_response_from_template(
+        request=request,
+        template_name="catalog/book/curated_catalog.html",
+        context=context,
+        filename="canders_picks.pdf",
+    )
+
+
+@staff_member_required
+def curated_darvinas_picks_pdf(request: HttpRequest) -> HttpResponse:
+    """Media items where Artist tag OR MediaItem tag = Darvina's Picks."""
+    qs = _book_base_qs().filter(
+        Q(artist__artist_tags__tag__scope=Tag.Scope.ARTIST, artist__artist_tags__tag__slug=PICKS_TAG_SLUG_DARVINA)
+        | Q(media_item_tags__tag__scope=Tag.Scope.MEDIA_ITEM, media_item_tags__tag__slug=PICKS_TAG_SLUG_DARVINA)
+    ).distinct()
+
+    context = {
+        "items": qs,
+        "book_title": "Darvina's Picks",
+        "generated_on": None,
+    }
+    return _pdf_response_from_template(
+        request=request,
+        template_name="catalog/book/curated_catalog.html",
+        context=context,
+        filename="darvinas_picks.pdf",
+    )
+
+
+@staff_member_required
+def curated_audiophile_collection_pdf(request: HttpRequest) -> HttpResponse:
+    """Audiophile collection: Special / Premium Pressing / Box Set (show zone, no bin)."""
+    qs = _book_base_qs().filter(
+        media_item_tags__tag__scope=Tag.Scope.MEDIA_ITEM,
+    ).filter(
+        Q(media_item_tags__tag__slug__in=AUDIOPHILE_TAG_SLUGS)
+        | Q(media_item_tags__tag__name__in=AUDIOPHILE_TAG_NAME_FALLBACKS)
+    ).distinct()
+
+    context = {
+        "items": qs,
+        "book_title": "Audiophile Collection",
+        "generated_on": None,
+    }
+    return _pdf_response_from_template(
+        request=request,
+        template_name="catalog/book/audiophile_catalog.html",
+        context=context,
+        filename="audiophile_collection.pdf",
+    )
+
+
+@staff_member_required
+def curated_other_media_pdf(request: HttpRequest) -> HttpResponse:
+    """Other media: 7\" Vinyl, Cassette Tape, CD."""
+    qs = _book_base_qs().filter(media_type__name__in=OTHER_MEDIA_TYPE_NAMES).distinct()
+
+    context = {
+        "items": qs,
+        "book_title": "Other Media (7\" / Cassette / CD)",
+        "generated_on": None,
+        "hide_bin": True,
+    }
+    return _pdf_response_from_template(
+        request=request,
+        template_name="catalog/book/other_media_catalog.html",
+        context=context,
+        filename="other_media.pdf",
     )

@@ -659,6 +659,32 @@ class ReportsLandingView(StaffOnlyMixin, TemplateView):
                 "url": "catalog_public:book_standard_lps_misc_pdf",
             },
 
+            {
+                "title": "New Additions (PDF)",
+                "desc": "All media items tagged New Additions.",
+                "url": "catalog_public:book_new_additions_pdf",
+            },
+            {
+                "title": "Cander's Picks (PDF)",
+                "desc": "Artist picks + item picks for Cander's Picks.",
+                "url": "catalog_public:book_canders_picks_pdf",
+            },
+            {
+                "title": "Darvina's Picks (PDF)",
+                "desc": "Artist picks + item picks for Darvina's Picks.",
+                "url": "catalog_public:book_darvinas_picks_pdf",
+            },
+            {
+                "title": "Audiophile Collection (PDF)",
+                "desc": "Special / Premium Pressing / Box Set items (shows zone, not bin).",
+                "url": "catalog_public:book_audiophile_collection_pdf",
+            },
+            {
+                "title": "Other Media (PDF)",
+                "desc": "7\" Vinyl, Cassette Tape, and CD.",
+                "url": "catalog_public:book_other_media_pdf",
+            },
+
         ]
 
         return ctx

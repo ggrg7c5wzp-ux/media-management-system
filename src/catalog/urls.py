@@ -28,6 +28,11 @@ from .views_reports import (
     standard_lp_catalog_roots_pdf,
     standard_lp_catalog_soundtracks_pdf,
     standard_lp_catalog_misc_pdf,
+    curated_new_additions_pdf,
+    curated_canders_picks_pdf,
+    curated_darvinas_picks_pdf,
+    curated_audiophile_collection_pdf,
+    curated_other_media_pdf,
 )
 
 app_name = "catalog_public"
@@ -73,6 +78,12 @@ urlpatterns = [
     path("reports/book/standard-lps-roots.pdf", standard_lp_catalog_roots_pdf, name="book_standard_lps_roots_pdf"),
     path("reports/book/standard-lps-soundtracks.pdf", standard_lp_catalog_soundtracks_pdf, name="book_standard_lps_soundtracks_pdf"),
     path("reports/book/standard-lps-misc.pdf", standard_lp_catalog_misc_pdf, name="book_standard_lps_misc_pdf"),
+    path("reports/book/new-additions.pdf", curated_new_additions_pdf, name="book_new_additions_pdf"),
+    path("reports/book/cander-picks.pdf", curated_canders_picks_pdf, name="book_canders_picks_pdf"),
+    path("reports/book/darvina-picks.pdf", curated_darvinas_picks_pdf, name="book_darvinas_picks_pdf"),
+    path("reports/book/audiophile-collection.pdf", curated_audiophile_collection_pdf, name="book_audiophile_collection_pdf"),
+    path("reports/book/other-media.pdf", curated_other_media_pdf, name="book_other_media_pdf"),
+
 
     # (Still here, but not part of Phase 4 requirements — you can remove later if you want)
     path("reports/rebin-preview.pdf", RebinPreviewPdfView.as_view(), name="rebin_preview_pdf"),
