@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import defaultdict
 
 from django.contrib.admin.views.decorators import staff_member_required
-from django.db.models import Q
+from django.db.models import Case, When, F, IntegerField, Q
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.template.loader import render_to_string
@@ -122,6 +122,7 @@ def _standard_lp_qs():
     NOTE: relies on MediaType.name == "Standard LP" (case-insensitive).
     """
     mt = MediaType.objects.filter(name__iexact="Standard LP").first()
+    garage_main = StorageZone.objects.filter(code="GARAGE_MAIN").first()
 
     qs = (
         MediaItem.objects
@@ -135,11 +136,21 @@ def _standard_lp_qs():
             "logical_bin__mapping__physical_bin",
             "logical_bin__mapping__physical_bin__zone",
         )
+        .annotate(
+            effective_zone_id=Case(
+                When(zone_override__isnull=False, then=F("zone_override_id")),
+                default=F("media_type__default_zone_id"),
+                output_field=IntegerField(),
+            )
+        )
         .order_by("artist__sort_name", "title", "pressing_year", "pk")
     )
 
     if mt:
         qs = qs.filter(media_type=mt)
+
+    if garage_main is not None:
+        qs = qs.filter(effective_zone_id=garage_main.pk)
 
     return mt, qs
 
@@ -166,7 +177,7 @@ def standard_lp_catalog_pdf(request: HttpRequest) -> HttpResponse:
 
     context = {
         "items": qs,
-        "book_title": "Standard LP Catalog",
+        "book_title": "Garage LP Catalog",
         "generated_on": None,
         "media_type": mt,
     }
@@ -184,6 +195,7 @@ SOUNDTRACK_BUCKETS = ["Soundtracks"]
 MISC_BUCKETS = ["Compilations", "Holiday", "Miscellaneous"]
 EXCLUDE_FOR_MAIN = ROOTS_BUCKETS + SOUNDTRACK_BUCKETS + MISC_BUCKETS
 
+# This is used as the base template #
 
 @staff_member_required
 def standard_lp_catalog_main_pdf(request: HttpRequest) -> HttpResponse:
@@ -193,7 +205,7 @@ def standard_lp_catalog_main_pdf(request: HttpRequest) -> HttpResponse:
 
     context = {
         "items": qs,
-        "book_title": "Standard LP Catalog — Main",
+        "book_title": "Garage Standard LP Catalog",
         "generated_on": None,
         "media_type": mt,
     }
@@ -213,7 +225,7 @@ def standard_lp_catalog_roots_pdf(request: HttpRequest) -> HttpResponse:
 
     context = {
         "items": qs,
-        "book_title": "Standard LP Catalog — Roots",
+        "book_title": "Blue, Jazz, & Vocals",
         "generated_on": None,
         "media_type": mt,
     }
@@ -221,7 +233,7 @@ def standard_lp_catalog_roots_pdf(request: HttpRequest) -> HttpResponse:
         request=request,
         template_name="catalog/book/standard_lp_catalog.html",
         context=context,
-        filename="standard_lp_catalog_roots.pdf",
+        filename="standard_lp_catalog_blues.pdf",
     )
 
 
@@ -233,7 +245,7 @@ def standard_lp_catalog_soundtracks_pdf(request: HttpRequest) -> HttpResponse:
 
     context = {
         "items": qs,
-        "book_title": "Standard LP Catalog — Soundtracks",
+        "book_title": "Soundtracks",
         "generated_on": None,
         "media_type": mt,
     }
@@ -253,7 +265,7 @@ def standard_lp_catalog_misc_pdf(request: HttpRequest) -> HttpResponse:
 
     context = {
         "items": qs,
-        "book_title": "Standard LP Catalog — Misc",
+        "book_title": "Miscellaneous",
         "generated_on": None,
         "media_type": mt,
     }

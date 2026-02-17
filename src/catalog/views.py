@@ -639,23 +639,23 @@ class ReportsLandingView(StaffOnlyMixin, TemplateView):
         # Catalog Book (print-first, PDF-ready)
         ctx["catalog_book"] = [
             {
-                "title": "Standard LP Catalog — Main (PDF)",
-                "desc": "Standard LPs excluding Roots + Soundtracks + Compilations/Holiday/Misc.",
+                "title": "Garage LP Catalog (PDF)",
+                "desc": " Garage LPs excluding Blues, Jazz, Vocals, Soundtracks, Complilations, Holiday, and Misc.",
                 "url": "catalog_public:book_standard_lps_main_pdf",
             },
             {
-                "title": "Standard LP Catalog — Roots (PDF)",
-                "desc": "Standard LPs in Blues/Jazz/Vocals.",
+                "title": "Blues, Jazz & Vocals (PDF)",
+                "desc": "Garage LPs in Blues/Jazz/Vocals.",
                 "url": "catalog_public:book_standard_lps_roots_pdf",
             },
             {
-                "title": "Standard LP Catalog — Soundtracks (PDF)",
-                "desc": "Standard LPs in Soundtracks.",
+                "title": "Soundtracks (PDF)",
+                "desc": "Garage LPs in Soundtracks.",
                 "url": "catalog_public:book_standard_lps_soundtracks_pdf",
             },
             {
-                "title": "Standard LP Catalog — Misc (PDF)",
-                "desc": "Standard LPs in Compilations/Holiday/Miscellaneous.",
+                "title": "Miscellaneous (PDF)",
+                "desc": "Garage LPs in Compilations/Holiday/Miscellaneous.",
                 "url": "catalog_public:book_standard_lps_misc_pdf",
             },
 
