@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from collections import defaultdict
+import html
+from urllib import request
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Case, When, F, IntegerField, Q
@@ -8,6 +10,8 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.template.loader import render_to_string
 from weasyprint import HTML
+from django.conf import settings
+from pathlib import Path
 
 from catalog.models import StorageZone, MediaItem, MediaType
 
@@ -163,7 +167,9 @@ def _pdf_response_from_template(
     filename: str,
 ) -> HttpResponse:
     html = render_to_string(template_name, context, request=request)
-    pdf_bytes = HTML(string=html, base_url=request.build_absolute_uri("/")).write_pdf()
+    static_root = getattr(settings, "STATIC_ROOT", None)
+    base_url = Path(static_root).as_uri() + "/" if static_root else request.build_absolute_uri("/")
+    pdf_bytes = HTML(string=html, base_url=base_url).write_pdf()
 
     resp = HttpResponse(pdf_bytes, content_type="application/pdf")
     resp["Content-Disposition"] = f'inline; filename="{filename}"'
